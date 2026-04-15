@@ -132,6 +132,17 @@ class SettingsWindow(tk.Tk):
 
         ttk.Separator(self, orient="horizontal").pack(fill="x", padx=16, pady=(10, 0))
 
+        # ── Buttons ZUERST packen (side=bottom) → bleiben immer sichtbar
+        bottom_sep = ttk.Separator(self, orient="horizontal")
+        bottom_sep.pack(side="bottom", fill="x", padx=16)
+        btn_frame = ttk.Frame(self)
+        btn_frame.pack(side="bottom", fill="x", padx=16, pady=10)
+        ttk.Button(btn_frame, text="Speichern",
+                   command=self._save).pack(side="right", padx=(6, 0))
+        ttk.Button(btn_frame, text="Abbrechen",
+                   command=self._cancel).pack(side="right")
+
+        # ── Notebook füllt den Rest
         self._notebook = ttk.Notebook(self)
         self._notebook.pack(fill="both", expand=True, padx=12, pady=8)
 
@@ -147,14 +158,6 @@ class SettingsWindow(tk.Tk):
         self._build_snippets(self._tabs["Snippets"])
         self._build_nouns(self._tabs["Eigennamen"])
         self._build_feedback(self._tabs["Feedback"])
-
-        ttk.Separator(self, orient="horizontal").pack(fill="x", padx=16)
-        btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill="x", padx=16, pady=10)
-        ttk.Button(btn_frame, text="Speichern",
-                   command=self._save).pack(side="right", padx=(6, 0))
-        ttk.Button(btn_frame, text="Abbrechen",
-                   command=self._cancel).pack(side="right")
 
     # ── Allgemein ──────────────────────────────────────────────────────
     def _build_general(self, parent):
