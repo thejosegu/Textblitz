@@ -103,10 +103,10 @@ class SettingsWindow(tk.Tk):
         s.configure("Red.TLabel",    foreground=_RED,   font=_FONT_BOLD)
         s.configure("Accent.TLabel", foreground=self._accent, font=_FONT_BOLD)
 
-        # Notebook tabs: Windows 11-proportioned (roomier padding vs font)
+        # Notebook tabs: kompaktes Padding damit alle 6 Tabs passen
         s.configure("TNotebook.Tab",
-                     font=("Segoe UI Variable Text", 10),
-                     padding=[14, 6])
+                     font=("Segoe UI Variable Text", 9),
+                     padding=[8, 5])
 
     # ── show / hide ────────────────────────────────────────────────────
     def show(self, config: Config, on_save: Callable, on_close: Callable):
@@ -314,6 +314,55 @@ class SettingsWindow(tk.Tk):
                       command=lambda v: self._density_lbl.configure(
                           text=str(int(float(v))))).pack(
                 side="left", fill="x", expand=True, padx=8)
+
+    # ── Snippets ───────────────────────────────────────────────────────
+    def _build_snippets(self, parent):
+        outer = _scrollable(parent)
+
+        with _card(outer, self._card_bg) as card:
+            _header(card, "Snippets")
+            ttk.Label(
+                card,
+                text="Sprich ein Keyword — es wird automatisch durch den definierten Text ersetzt.\n"
+                     "Groß-/Kleinschreibung wird ignoriert.",
+                style="Muted.TLabel", wraplength=540, justify="left",
+            ).pack(anchor="w", pady=(0, 10))
+
+            # Header-Zeile
+            hdr = ttk.Frame(card)
+            hdr.pack(fill="x", pady=(0, 4))
+            ttk.Label(hdr, text="Keyword",    font=_FONT_BOLD, width=20, anchor="w").pack(side="left")
+            ttk.Label(hdr, text="Ersatztext", font=_FONT_BOLD, anchor="w").pack(side="left", padx=(8, 0))
+
+            # Container für die Snippet-Zeilen
+            self._snippets_frame = ttk.Frame(card)
+            self._snippets_frame.pack(fill="x")
+            self._snippet_rows: list[tuple[tk.StringVar, tk.StringVar]] = []
+
+            # „+"-Button
+            ttk.Button(
+                card, text="+ Snippet hinzufügen",
+                command=self._add_snippet_row,
+            ).pack(anchor="w", pady=(10, 0))
+
+    def _add_snippet_row(self, keyword: str = "", text: str = ""):
+        kw_var  = tk.StringVar(value=keyword)
+        txt_var = tk.StringVar(value=text)
+        self._snippet_rows.append((kw_var, txt_var))
+
+        frm = ttk.Frame(self._snippets_frame)
+        frm.pack(fill="x", pady=3)
+
+        ttk.Entry(frm, textvariable=kw_var,  width=20, font=_FONT).pack(side="left")
+        ttk.Entry(frm, textvariable=txt_var, font=_FONT).pack(
+            side="left", fill="x", expand=True, padx=(8, 8))
+
+        def _delete(f=frm, pair=(kw_var, txt_var)):
+            if pair in self._snippet_rows:
+                self._snippet_rows.remove(pair)
+            f.destroy()
+
+        ttk.Button(frm, text="✕", width=3, command=_delete).pack(side="left")
 
     # ── Eigennamen ─────────────────────────────────────────────────────
     def _build_nouns(self, parent):
