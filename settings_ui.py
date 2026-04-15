@@ -339,17 +339,10 @@ class SettingsWindow(tk.Tk):
             self._snippets_frame.pack(fill="x")
             self._snippet_rows: list[tuple[tk.StringVar, tk.StringVar]] = []
 
-            # Button-Zeile: Hinzufügen links, Speichern rechts
-            btn_row = ttk.Frame(card)
-            btn_row.pack(fill="x", pady=(10, 0))
             ttk.Button(
-                btn_row, text="+ Snippet hinzufügen",
+                card, text="+ Snippet hinzufügen",
                 command=self._add_snippet_row,
-            ).pack(side="left")
-            ttk.Button(
-                btn_row, text="Speichern",
-                command=self._save,
-            ).pack(side="right")
+            ).pack(anchor="w", pady=(10, 0))
 
     def _add_snippet_row(self, keyword: str = "", text: str = ""):
         kw_var  = tk.StringVar(master=self, value=keyword)
@@ -384,7 +377,7 @@ class SettingsWindow(tk.Tk):
 
     # ── Feedback ───────────────────────────────────────────────────────
     def _build_feedback(self, parent):
-        frm = _scrollable(parent)
+        frm = _plain(parent)
 
         # API Status card
         with _card(frm, self._card_bg) as card:
@@ -433,7 +426,7 @@ class SettingsWindow(tk.Tk):
         # Log card
         with _card(frm, self._card_bg) as card:
             _header(card, "Ereignis-Log")
-            self._fb_log = _textbox(card, height=9, font=_FONT_MONO, state="disabled")
+            self._fb_log = _textbox(card, height=6, font=_FONT_MONO, state="disabled")
             btn_row = ttk.Frame(card)
             btn_row.pack(fill="x", pady=(4, 0))
             ttk.Button(btn_row, text="Aktualisieren",
