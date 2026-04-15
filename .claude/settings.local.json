@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from config import Config; from recorder import Recorder; from hotkeys import HotkeyListener, parse_hotkey; from tray import TrayIcon; print\\('Imports OK'\\)\")",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

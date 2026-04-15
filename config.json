@@ -1,0 +1,19 @@
+{
+  "api_key": "",
+  "whisper_language": "de",
+  "record_mode": "hold",
+  "hotkeys": {
+    "normal": "ctrl_r",
+    "plus": "ctrl_r+shift_r",
+    "rage": "<255>+shift_l",
+    "emoji": "<255>+ctrl_l"
+  },
+  "prompts": {
+    "plus": "Formuliere diesen gesprochenen Text natürlicher und schriftlicher um. Behalte den Sinn und die ungefähre Länge bei. Antworte NUR mit dem umformulierten Text, ohne Erklärungen oder Kommentare.",
+    "rage": "Diese Person klingt aufgebracht oder frustriert. Schreibe eine höfliche, professionelle Version dieser Nachricht, die den Kerninhalt beibehält. Antworte NUR mit der höflichen Version, ohne Erklärungen.",
+    "emoji": "Füge passende Emojis in diesen Text ein. Emoji-Dichte: {density}/10 (1=sehr wenige, 10=sehr viele). Behalte den Text ansonsten unverändert. Antworte NUR mit dem Text mit Emojis, ohne Erklärungen."
+  },
+  "emoji_density": 5,
+  "proper_nouns": [],
+  "autostart": false
+}
