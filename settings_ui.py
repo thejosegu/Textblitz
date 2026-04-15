@@ -76,7 +76,7 @@ class SettingsWindow(tk.Tk):
         self._on_save:  Callable | None = None
         self._on_close: Callable | None = None
 
-        self.title("Blitztext — Einstellungen")
+        self.title("Textblitz — Einstellungen")
         self.geometry("640x740")
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", self._cancel)
@@ -123,7 +123,7 @@ class SettingsWindow(tk.Tk):
         # Top title bar area
         header = ttk.Frame(self)
         header.pack(fill="x", padx=16, pady=(14, 0))
-        ttk.Label(header, text="⚡ Blitztext",
+        ttk.Label(header, text="⚡ Textblitz",
                   font=("Segoe UI Variable Display", 16, "bold"),
                   foreground=self._accent).pack(side="left")
         ttk.Label(header, text="Einstellungen",
@@ -196,7 +196,7 @@ class SettingsWindow(tk.Tk):
         with _card(frm, self._card_bg) as card:
             _header(card, "Autostart")
             self._autostart_var = tk.BooleanVar()
-            ttk.Checkbutton(card, text="Blitztext beim Windows-Start automatisch öffnen",
+            ttk.Checkbutton(card, text="Textblitz beim Windows-Start automatisch öffnen",
                             variable=self._autostart_var).pack(anchor="w")
 
     def _toggle_key_visibility(self):
@@ -515,11 +515,11 @@ class SettingsWindow(tk.Tk):
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path, 0,
                                 winreg.KEY_SET_VALUE) as key:
                 if enable:
-                    winreg.SetValueEx(key, "Blitztext", 0, winreg.REG_SZ,
+                    winreg.SetValueEx(key, "Textblitz", 0, winreg.REG_SZ,
                                       f'"{sys.executable}" "{__file__}"')
                 else:
                     try:
-                        winreg.DeleteValue(key, "Blitztext")
+                        winreg.DeleteValue(key, "Textblitz")
                     except FileNotFoundError:
                         pass
         except Exception:

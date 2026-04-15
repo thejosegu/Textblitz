@@ -57,7 +57,7 @@ class TrayIcon:
         self._mode: str | None = None
 
         self._icon = pystray.Icon(
-            name="Blitztext",
+            name="Textblitz",
             icon=_make_icon_image("ready"),
             title=self._tooltip(),
             menu=self._build_menu(),
@@ -79,7 +79,7 @@ class TrayIcon:
 
     # ── private ───────────────────────────────────────────────────────
     def _tooltip(self) -> str:
-        base = "Blitztext"
+        base = "Textblitz"
         if self._status == "ready":
             return f"{base} — bereit"
         if self._status == "recording":

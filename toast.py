@@ -24,7 +24,7 @@ def _show(text: str, duration_ms: int):
         preview = (text[:max_chars] + "…") if len(text) > max_chars else text
 
         header = tk.Label(
-            root, text="✓ Blitztext — Text eingefügt",
+            root, text="✓ Textblitz — Text eingefügt",
             bg="#16213e", fg="#2ecc71",
             font=("Segoe UI", 9, "bold"),
             anchor="w", padx=pad_x, pady=pad_y,

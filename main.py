@@ -1,4 +1,4 @@
-"""Blitztext — Windows speech-to-text tray app.
+"""Textblitz — Windows speech-to-text tray app.
 
 Architecture
 ------------
@@ -29,7 +29,7 @@ from transcriber import transcribe
 from tray import TrayIcon
 
 
-class Blitztext:
+class Textblitz:
     def __init__(self):
         self._config = Config()
         self._recorder = Recorder()
@@ -49,11 +49,11 @@ class Blitztext:
     # ── lifecycle ─────────────────────────────────────────────────────
     def run(self):
         self._hotkeys.start()
-        print("[Blitztext] gestartet — bereit")
+        print("[Textblitz] gestartet — bereit")
         self._tray.run()  # blocks until quit
 
     def _quit(self):
-        print("[Blitztext] wird beendet…")
+        print("[Textblitz] wird beendet…")
         self._hotkeys.stop()
         self._executor.shutdown(wait=False)
         self._tray.stop()
@@ -148,7 +148,7 @@ class Blitztext:
 
 
 def main():
-    app = Blitztext()
+    app = Textblitz()
     app.run()
 
 
