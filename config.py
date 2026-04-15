@@ -66,8 +66,9 @@ class Config:
             self._data = _deep_merge(DEFAULT_CONFIG, {})
 
     def save(self):
+        data = {k: v for k, v in self._data.items() if k != "api_key"}
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(self._data, f, indent=2, ensure_ascii=False)
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
     # ── generic access ──────────────────────────────────────────────
     def get(self, key: str, default=None) -> Any:
@@ -84,9 +85,10 @@ class Config:
 
     @api_key.setter
     def api_key(self, v: str):
-        self._data["api_key"] = v
-        # Auch Umgebungsvariable aktualisieren (für laufende Session)
+        # Key wird NICHT in config.json gespeichert — nur in .env und Umgebungsvariable
         os.environ["GROQ_API_KEY"] = v
+        env_path = Path(__file__).parent / ".env"
+        env_path.write_text(f"GROQ_API_KEY={v}\n", encoding="utf-8")
 
     @property
     def whisper_language(self) -> str:

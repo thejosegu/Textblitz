@@ -14,6 +14,18 @@
     "emoji": "Füge passende Emojis in diesen Text ein. Emoji-Dichte: {density}/10 (1=sehr wenige, 10=sehr viele). Behalte den Text ansonsten unverändert. Antworte NUR mit dem Text mit Emojis, ohne Erklärungen."
   },
   "emoji_density": 5,
-  "proper_nouns": [],
-  "autostart": false
+  "proper_nouns": [
+    "krawaz"
+  ],
+  "autostart": false,
+  "snippets": [
+    {
+      "keyword": "Rosenblau",
+      "text": "Testersatz"
+    },
+    {
+      "keyword": "lilalo",
+      "text": "halohalo"
+    }
+  ]
 }
