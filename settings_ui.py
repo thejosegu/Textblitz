@@ -339,11 +339,17 @@ class SettingsWindow(tk.Tk):
             self._snippets_frame.pack(fill="x")
             self._snippet_rows: list[tuple[tk.StringVar, tk.StringVar]] = []
 
-            # „+"-Button
+            # Button-Zeile: Hinzufügen links, Speichern rechts
+            btn_row = ttk.Frame(card)
+            btn_row.pack(fill="x", pady=(10, 0))
             ttk.Button(
-                card, text="+ Snippet hinzufügen",
+                btn_row, text="+ Snippet hinzufügen",
                 command=self._add_snippet_row,
-            ).pack(anchor="w", pady=(10, 0))
+            ).pack(side="left")
+            ttk.Button(
+                btn_row, text="Speichern",
+                command=self._save,
+            ).pack(side="right")
 
     def _add_snippet_row(self, keyword: str = "", text: str = ""):
         kw_var  = tk.StringVar(master=self, value=keyword)
