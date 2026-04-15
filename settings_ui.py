@@ -703,7 +703,13 @@ _ui_thread: threading.Thread | None = None
 
 
 def _ui_worker():
-    win = SettingsWindow()
+    try:
+        win = SettingsWindow()
+    except Exception as e:
+        print(f"[Fehler] SettingsWindow konnte nicht erstellt werden: {e}")
+        _ui_ready.set()   # Blocker freigeben damit open_settings_window nicht hängt
+        return
+
     _ui_ready.set()
 
     def _poll():
@@ -712,7 +718,10 @@ def _ui_worker():
             win.show(config, on_save, on_close=done.set)
         except queue.Empty:
             pass
-        win.after(100, _poll)
+        try:
+            win.after(100, _poll)
+        except Exception:
+            pass
 
     win.after(0, _poll)
     win.mainloop()
@@ -726,6 +735,10 @@ def open_settings_window(config: Config, on_save: Callable[[Config], None]):
         _ui_thread = threading.Thread(target=_ui_worker, daemon=True, name="settings-ui")
         _ui_thread.start()
         _ui_ready.wait()
+
+    if not _ui_thread.is_alive():
+        print("[Fehler] Settings-UI-Thread konnte nicht gestartet werden")
+        return
 
     done = threading.Event()
     _ui_queue.put((config, on_save, done))
