@@ -39,6 +39,11 @@ DEFAULT_CONFIG = {
     "emoji_density": 5,
     "proper_nouns": [],
     "autostart": False,
+    "snippets": [
+        {"keyword": "freundliche gr\u00fc\u00dfe", "text": "Mit freundlichen Gr\u00fc\u00dfen"},
+        {"keyword": "vielen dank",      "text": "Vielen Dank und mit freundlichen Gr\u00fc\u00dfen"},
+        {"keyword": "auf wiedersehen",  "text": "Auf Wiedersehen und einen sch\u00f6nen Tag noch!"},
+    ],
 }
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
@@ -142,6 +147,15 @@ class Config:
     @autostart.setter
     def autostart(self, v: bool):
         self._data["autostart"] = v
+
+    @property
+    def snippets(self) -> list:
+        """Liste von {keyword, text} Dicts."""
+        return self._data.get("snippets", [])
+
+    @snippets.setter
+    def snippets(self, v: list):
+        self._data["snippets"] = v
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

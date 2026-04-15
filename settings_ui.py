@@ -136,7 +136,7 @@ class SettingsWindow(tk.Tk):
         self._notebook.pack(fill="both", expand=True, padx=12, pady=8)
 
         self._tabs: dict[str, ttk.Frame] = {}
-        for name in ["Allgemein", "Hotkeys", "Modi", "Eigennamen", "Feedback"]:
+        for name in ["Allgemein", "Hotkeys", "Modi", "Snippets", "Eigennamen", "Feedback"]:
             frame = ttk.Frame(self._notebook)
             self._notebook.add(frame, text=name)
             self._tabs[name] = frame
@@ -144,6 +144,7 @@ class SettingsWindow(tk.Tk):
         self._build_general(self._tabs["Allgemein"])
         self._build_hotkeys(self._tabs["Hotkeys"])
         self._build_modes(self._tabs["Modi"])
+        self._build_snippets(self._tabs["Snippets"])
         self._build_nouns(self._tabs["Eigennamen"])
         self._build_feedback(self._tabs["Feedback"])
 
@@ -475,6 +476,13 @@ class SettingsWindow(tk.Tk):
         self._nouns_box.delete("1.0", "end")
         self._nouns_box.insert("1.0", "\n".join(cfg.proper_nouns))
 
+        # Snippets neu aufbauen
+        for w in self._snippets_frame.winfo_children():
+            w.destroy()
+        self._snippet_rows.clear()
+        for s in cfg.snippets:
+            self._add_snippet_row(s.get("keyword", ""), s.get("text", ""))
+
     # ── Save / Cancel ──────────────────────────────────────────────────
     def _save(self):
         cfg = self._config
@@ -493,6 +501,12 @@ class SettingsWindow(tk.Tk):
 
         raw = self._nouns_box.get("1.0", "end").strip()
         cfg.proper_nouns = [n.strip() for n in raw.splitlines() if n.strip()]
+
+        cfg.snippets = [
+            {"keyword": kw.get().strip(), "text": tx.get().strip()}
+            for kw, tx in self._snippet_rows
+            if kw.get().strip()
+        ]
 
         cfg.save()
         self._on_save(cfg)

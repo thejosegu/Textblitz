@@ -5,6 +5,19 @@ Provider is detected from the API key prefix (same logic as transcriber.py):
   gsk_...  → Groq    (model: llama-3.1-8b-instant)
 """
 from __future__ import annotations
+import re
+
+
+def apply_snippets(text: str, snippets: list) -> str:
+    """Ersetzt Keywords durch den definierten Snippet-Text (case-insensitive, ganze Wörter)."""
+    for snippet in snippets:
+        keyword = snippet.get("keyword", "").strip()
+        replacement = snippet.get("text", "").strip()
+        if not keyword or not replacement:
+            continue
+        pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def process(text: str, mode: str, api_key: str,

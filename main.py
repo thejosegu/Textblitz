@@ -22,7 +22,7 @@ import toast
 from config import Config
 from hotkeys import HotkeyListener
 from injector import inject
-from processor import process
+from processor import process, apply_snippets
 from recorder import Recorder
 from settings_ui import open_settings_window
 from transcriber import transcribe
@@ -105,6 +105,7 @@ class Textblitz:
                 result = transcript
 
             applog.set_last(transcript, result, mode)
+            result = apply_snippets(result, self._config.snippets)
             inject(result)
             toast.show(result)
             self._tray.set_status("ready")
