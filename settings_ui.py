@@ -382,11 +382,6 @@ class SettingsWindow(tk.Tk):
                       ).pack(anchor="w", pady=(0, 8))
             self._nouns_box = _textbox(card, height=6, expand=True)
 
-        btn_row = ttk.Frame(frm)
-        btn_row.pack(fill="x", pady=(4, 0))
-        ttk.Button(btn_row, text="Speichern",
-                   command=self._save).pack(side="right")
-
     # ── Feedback ───────────────────────────────────────────────────────
     def _build_feedback(self, parent):
         frm = _scrollable(parent)
