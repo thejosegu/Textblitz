@@ -557,9 +557,21 @@ class SettingsWindow(tk.Tk):
             if kw.get().strip()
         ]
 
-        cfg.save()
-        self._on_save(cfg)
-        self._apply_autostart(cfg.autostart)
+        try:
+            cfg.save()
+        except Exception as e:
+            print(f"[Fehler] config.save(): {e}")
+
+        try:
+            self._on_save(cfg)
+        except Exception as e:
+            print(f"[Fehler] on_save callback: {e}")
+
+        try:
+            self._apply_autostart(cfg.autostart)
+        except Exception as e:
+            print(f"[Fehler] autostart: {e}")
+
         self._close()
 
     def _cancel(self):
