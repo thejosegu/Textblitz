@@ -346,8 +346,8 @@ class SettingsWindow(tk.Tk):
             ).pack(anchor="w", pady=(10, 0))
 
     def _add_snippet_row(self, keyword: str = "", text: str = ""):
-        kw_var  = tk.StringVar(value=keyword)
-        txt_var = tk.StringVar(value=text)
+        kw_var  = tk.StringVar(master=self, value=keyword)
+        txt_var = tk.StringVar(master=self, value=text)
         self._snippet_rows.append((kw_var, txt_var))
 
         frm = ttk.Frame(self._snippets_frame)
