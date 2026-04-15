@@ -17,6 +17,10 @@ build/
 # Transkripte (lokal, nicht im Repo)
 transcripts/
 
+# Node
+node_modules/
+package-lock.json
+
 # VS Code
 .vscode/
 
