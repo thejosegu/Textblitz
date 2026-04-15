@@ -24,6 +24,9 @@ package-lock.json
 # VS Code
 .vscode/
 
+# Logs
+*.log
+
 # Windows
 Thumbs.db
 desktop.ini
