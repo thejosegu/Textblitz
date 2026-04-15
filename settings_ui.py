@@ -77,7 +77,7 @@ class SettingsWindow(tk.Tk):
         self._on_close: Callable | None = None
 
         self.title("Textblitz — Einstellungen")
-        self.geometry("640x740")
+        self.geometry("640x820")
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", self._cancel)
 
