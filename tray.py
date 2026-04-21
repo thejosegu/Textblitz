@@ -47,6 +47,11 @@ def _make_icon_image(status: str) -> Image.Image:
     return img
 
 
+def _apply_icon(icon: pystray.Icon, image, title: str) -> None:
+    icon.icon = image
+    icon.title = title
+
+
 class TrayIcon:
     def __init__(self,
                  on_open_settings: Callable[[], None],
@@ -71,8 +76,15 @@ class TrayIcon:
     def set_status(self, status: str, mode: str | None = None):
         self._status = status
         self._mode = mode
-        self._icon.icon = _make_icon_image(status)
-        self._icon.title = self._tooltip()
+        image = _make_icon_image(status)
+        title = self._tooltip()
+        # Shell_NotifyIcon must run on the pystray main thread; schedule() posts
+        # via the Win32 message queue to avoid WinError 1402 from other threads.
+        backend = getattr(self._icon, "_icon", None)
+        if backend is not None and hasattr(backend, "schedule"):
+            backend.schedule(lambda: _apply_icon(self._icon, image, title))
+        else:
+            _apply_icon(self._icon, image, title)
 
     def stop(self):
         self._icon.stop()

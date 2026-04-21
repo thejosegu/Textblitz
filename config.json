@@ -1,12 +1,11 @@
 {
-  "api_key": "",
-  "whisper_language": "de",
-  "record_mode": "hold",
+  "whisper_language": "auto",
+  "record_mode": "toggle",
   "hotkeys": {
     "normal": "ctrl_r",
     "plus": "ctrl_r+shift_r",
-    "rage": "<255>+shift_l",
-    "emoji": "<255>+ctrl_l"
+    "rage": "Key.left+Key.right",
+    "emoji": "Key.f8+Key.f9"
   },
   "prompts": {
     "plus": "Formuliere diesen gesprochenen Text natürlicher und schriftlicher um. Behalte den Sinn und die ungefähre Länge bei. Antworte NUR mit dem umformulierten Text, ohne Erklärungen oder Kommentare.",
@@ -15,17 +14,26 @@
   },
   "emoji_density": 5,
   "proper_nouns": [
-    "krawaz"
+    "grawaztt"
   ],
   "autostart": false,
+  "whisper_model_openai": "whisper-1",
+  "whisper_model_groq": "whisper-large-v3-turbo",
+  "chat_model_openai": "gpt-4o-mini",
+  "chat_model_groq": "llama-3.1-8b-instant",
+  "temperature": 0.7,
+  "max_tokens": 1024,
+  "use_local_whisper": true,
+  "whisper_model_path": "dist/whisper/model.bin",
   "snippets": [
     {
       "keyword": "Rosenblau",
       "text": "Testersatz"
     },
     {
-      "keyword": "lilalo",
+      "keyword": "Waldgelb",
       "text": "halohalo"
     }
-  ]
+  ],
+  "whisper_model_dir": "F:/90 Projekte/Textblitz/dist/whisper/"
 }

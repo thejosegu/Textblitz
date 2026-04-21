@@ -71,10 +71,12 @@ class HotkeyListener:
     def __init__(self,
                  get_hotkeys: Callable[[], dict[str, str]],
                  on_start: Callable[[str], None],
-                 on_stop:  Callable[[str], None]):
+                 on_stop:  Callable[[str], None],
+                 get_record_mode: Callable[[], str] | None = None):
         self._get_hotkeys = get_hotkeys
         self._on_start = on_start
         self._on_stop  = on_stop
+        self._get_record_mode = get_record_mode or (lambda: "hold")
 
         self._pressed: set = set()
         self._active_mode: str | None = None
@@ -102,19 +104,32 @@ class HotkeyListener:
         if self.capturing:
             return  # settings window is capturing – don't act
 
+        mode_to_stop = None
         with self._lock:
             self._pressed.add(key)
+
             if self._active_mode is not None:
-                return  # already recording
+                # Toggle mode: second press of the same combo stops recording
+                if self._get_record_mode() == "toggle":
+                    combo = parse_hotkey(self._get_hotkeys().get(self._active_mode, ""))
+                    if combo and combo.issubset(self._pressed):
+                        mode_to_stop = self._active_mode
+                        self._active_mode = None
+                if mode_to_stop is None:
+                    return  # already recording, ignore
 
-            # Cancel any pending trigger — a new key was pressed, re-evaluate
-            if self._pending_timer is not None:
-                self._pending_timer.cancel()
-                self._pending_timer = None
+            if mode_to_stop is None:
+                # Cancel any pending trigger — a new key was pressed, re-evaluate
+                if self._pending_timer is not None:
+                    self._pending_timer.cancel()
+                    self._pending_timer = None
 
-            # Wait 50 ms before triggering so multi-key combos can fully form
-            self._pending_timer = threading.Timer(0.05, self._try_trigger)
-            self._pending_timer.start()
+                # Wait 50 ms before triggering so multi-key combos can fully form
+                self._pending_timer = threading.Timer(0.05, self._try_trigger)
+                self._pending_timer.start()
+
+        if mode_to_stop:
+            self._on_stop(mode_to_stop)
 
     def _try_trigger(self):
         """Called after the short debounce delay — fires the most specific matching combo."""
@@ -150,7 +165,9 @@ class HotkeyListener:
                 self._pending_timer = None
 
             mode_to_stop = None
-            if self._active_mode is not None:
+            # In hold mode: releasing a key in the active combo stops recording.
+            # In toggle mode: key release is ignored — only a second press stops.
+            if self._active_mode is not None and self._get_record_mode() == "hold":
                 combo = parse_hotkey(self._get_hotkeys().get(self._active_mode, ""))
                 if key in combo:
                     mode_to_stop = self._active_mode

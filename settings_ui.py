@@ -9,6 +9,8 @@ import platform
 import queue
 import sys
 import threading
+import time
+from pathlib import Path
 from typing import Callable
 
 import tkinter as tk
@@ -19,7 +21,7 @@ from pynput import keyboard as pynput_kb
 import log as applog
 from config import Config
 from hotkeys import hotkey_to_str, parse_hotkey
-from transcriber import detect_provider
+from transcriber import detect_provider, is_local_model_loaded, is_model_on_disk, load_local_model, _DEFAULT_MODEL_DIR
 
 _MODES       = ["normal", "plus", "rage", "emoji"]
 _MODE_LABELS = {"normal": "Normal", "plus": "Plus", "rage": "Rage", "emoji": "Emoji"}
@@ -77,7 +79,7 @@ class SettingsWindow(tk.Tk):
         self._on_close: Callable | None = None
 
         self.title("Textblitz — Einstellungen")
-        self.geometry("640x820")
+        self.geometry("720x820")
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", self._cancel)
 
@@ -106,13 +108,14 @@ class SettingsWindow(tk.Tk):
         # Notebook tabs: kompaktes Padding damit alle 6 Tabs passen
         s.configure("TNotebook.Tab",
                      font=("Segoe UI Variable Text", 9),
-                     padding=[8, 5])
+                     padding=[8, 2])
 
     # ── show / hide ────────────────────────────────────────────────────
     def show(self, config: Config, on_save: Callable, on_close: Callable):
         self._config  = config
         self._on_save = on_save
         self._on_close = on_close
+        self._is_visible = True
         self._reload_values()
         self.deiconify()
         self.lift()
@@ -196,6 +199,35 @@ class SettingsWindow(tk.Tk):
             ttk.Radiobutton(card, text="Umschalten  —  1× drücken = start, 1× = stop",
                             variable=self._record_mode_var, value="toggle").pack(anchor="w", pady=(4, 0))
 
+        # Transkription card
+        with _card(frm, self._card_bg) as card:
+            _header(card, "Transkriptions-Modus")
+            self._transcription_mode_var = tk.StringVar(value="online")
+            self._transcription_mode_var.trace_add("write", self._on_transcription_mode_change)
+            ttk.Radiobutton(card,
+                            text="🌐  Online  —  OpenAI / Groq API",
+                            variable=self._transcription_mode_var,
+                            value="online").pack(anchor="w")
+            ttk.Radiobutton(card,
+                            text="💻  Lokal   —  Whisper Small (~463 MB), kein API-Key nötig",
+                            variable=self._transcription_mode_var,
+                            value="local").pack(anchor="w", pady=(4, 8))
+
+            path_row = ttk.Frame(card)
+            path_row.pack(fill="x")
+            ttk.Label(path_row, text="Modelldatei",
+                      style="Muted.TLabel", width=11, anchor="w").pack(side="left")
+            ttk.Button(path_row, text="…", width=3,
+                       command=self._browse_model_file).pack(side="right")
+            self._model_path_var = tk.StringVar()
+            self._model_path_var.trace_add("write", lambda *_: self._update_model_status())
+            ttk.Entry(path_row, textvariable=self._model_path_var,
+                      font=_FONT_MONO).pack(side="left", fill="x", expand=True, padx=(8, 6))
+
+            self._model_status_lbl = ttk.Label(card, text="—", style="Muted.TLabel")
+            self._model_status_lbl.pack(anchor="w", pady=(6, 0))
+            self._model_load_gen = 0  # invalidiert veraltete Timer/Threads bei neuem Load
+
         # Autostart card
         with _card(frm, self._card_bg) as card:
             _header(card, "Autostart")
@@ -207,6 +239,88 @@ class SettingsWindow(tk.Tk):
         self._api_key_entry.configure(
             show="" if self._api_key_entry.cget("show") else "●"
         )
+
+    def _on_transcription_mode_change(self, *_):
+        if self._transcription_mode_var.get() == "local":
+            self._load_local_model_async()
+        else:
+            self._model_status_lbl.configure(text="—", style="Muted.TLabel")
+
+    def _browse_model_file(self):
+        from tkinter import filedialog
+        current = self._model_path_var.get().strip()
+        initial = str(Path(current).parent) if current else _DEFAULT_MODEL_DIR
+        path = filedialog.askopenfilename(
+            title="Whisper model.bin auswählen",
+            initialdir=initial,
+            filetypes=[("Whisper-Modell", "model.bin"), ("Alle Dateien", "*.*")],
+            parent=self,
+        )
+        if path:
+            self._model_path_var.set(path)
+            self._load_local_model_async()
+
+    def _load_local_model_async(self):
+        model_path = self._model_path_var.get().strip() or None
+        if is_local_model_loaded():
+            self._model_status_lbl.configure(text="✓ Modell bereit", style="Green.TLabel")
+            return
+
+        self._model_load_gen += 1
+        gen = self._model_load_gen
+
+        self._model_status_lbl.configure(text="⏳ wird geladen…  (0s)", style="Accent.TLabel")
+        _start = time.monotonic()
+
+        def _tick():
+            if self._model_load_gen != gen:  # neuerer Load gestartet → abbrechen
+                return
+            if not self._model_status_lbl.cget("text").startswith("⏳"):
+                return
+            elapsed = int(time.monotonic() - _start)
+            self._model_status_lbl.configure(text=f"⏳ wird geladen…  ({elapsed}s)")
+            self.after(1000, _tick)
+
+        self.after(1000, _tick)
+
+        def _do():
+            try:
+                load_local_model(model_path)
+                if self._model_load_gen == gen:
+                    self.after(0, lambda: self._model_status_lbl.configure(
+                        text="✓ Modell bereit", style="Green.TLabel"))
+            except Exception as e:
+                msg = str(e)
+                if self._model_load_gen == gen:
+                    self.after(0, lambda m=msg: self._model_status_lbl.configure(
+                        text=f"✕ Fehler: {m}", style="Red.TLabel"))
+
+        threading.Thread(target=_do, daemon=True, name="model-load").start()
+
+    def _update_model_status(self):
+        current = self._model_status_lbl.cget("text")
+        # Endzustände nicht überschreiben
+        if current.startswith("⏳") or current == "✓ Modell bereit" or current.startswith("✕ Fehler:"):
+            return
+        if is_local_model_loaded():
+            self._model_status_lbl.configure(text="✓ Modell bereit", style="Green.TLabel")
+            return
+        if self._transcription_mode_var.get() != "local":
+            return
+
+        model_path = self._model_path_var.get().strip() or None
+
+        def _check():
+            on_disk = is_model_on_disk(model_path)
+            if on_disk:
+                self.after(0, lambda: self._model_status_lbl.configure(
+                    text="○ Vorhanden, nicht geladen", style="Muted.TLabel"))
+            else:
+                self.after(0, lambda: self._model_status_lbl.configure(
+                    text="✕ Fehlt  (~463 MB, wird beim ersten Start heruntergeladen)",
+                    style="Red.TLabel"))
+
+        threading.Thread(target=_check, daemon=True, name="model-status-check").start()
 
     # ── Hotkeys ────────────────────────────────────────────────────────
     def _build_hotkeys(self, parent):
@@ -292,7 +406,7 @@ class SettingsWindow(tk.Tk):
                 _header(card, f"{_MODE_LABELS[key]}-Modus")
                 ttk.Label(card, text=descs[key],
                           style="Muted.TLabel").pack(anchor="w", pady=(0, 6))
-                boxes[key] = _textbox(card, height=4, font=_FONT)
+                boxes[key] = _textbox(card, height=3, font=_FONT)
 
         self._plus_prompt  = boxes["plus"]
         self._rage_prompt  = boxes["rage"]
@@ -463,7 +577,8 @@ class SettingsWindow(tk.Tk):
         if cfg is None:
             return
 
-        self._fb_provider.configure(text=detect_provider(cfg.api_key))
+        self._fb_provider.configure(text=detect_provider(cfg.api_key, cfg.use_local_whisper))
+        self._update_model_status()
 
         if cfg.api_key:
             masked = (cfg.api_key[:6] + "…" + cfg.api_key[-4:]
@@ -497,7 +612,8 @@ class SettingsWindow(tk.Tk):
 
     def _schedule_feedback_refresh(self):
         try:
-            self._refresh_feedback()
+            if getattr(self, "_is_visible", False):
+                self._refresh_feedback()
             self.after(2000, self._schedule_feedback_refresh)
         except Exception:
             pass
@@ -509,6 +625,8 @@ class SettingsWindow(tk.Tk):
         self._lang_var.set(cfg.whisper_language)
         self._record_mode_var.set(cfg.record_mode)
         self._autostart_var.set(cfg.autostart)
+        self._transcription_mode_var.set("local" if cfg.use_local_whisper else "online")
+        self._model_path_var.set(cfg.whisper_model_path)
 
         for mode in _MODES:
             self._hotkey_vars[mode].set(cfg.get_hotkey(mode))
@@ -540,7 +658,9 @@ class SettingsWindow(tk.Tk):
         cfg.api_key          = self._api_key_var.get().strip()
         cfg.whisper_language = self._lang_var.get()
         cfg.record_mode      = self._record_mode_var.get()
-        cfg.autostart        = self._autostart_var.get()
+        cfg.autostart           = self._autostart_var.get()
+        cfg.use_local_whisper   = self._transcription_mode_var.get() == "local"
+        cfg.whisper_model_path  = self._model_path_var.get().strip()
 
         for mode in _MODES:
             cfg.set_hotkey(mode, self._hotkey_vars[mode].get())
@@ -580,6 +700,7 @@ class SettingsWindow(tk.Tk):
         self._close()
 
     def _close(self):
+        self._is_visible = False
         self.withdraw()
         if self._on_close:
             self._on_close()
@@ -589,11 +710,13 @@ class SettingsWindow(tk.Tk):
         try:
             import winreg
             path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+            pythonw = str(Path(sys.executable).parent / "pythonw.exe")
+            app     = str(Path(__file__).resolve().parent / "textblitz.pyw")
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path, 0,
                                 winreg.KEY_SET_VALUE) as key:
                 if enable:
                     winreg.SetValueEx(key, "Textblitz", 0, winreg.REG_SZ,
-                                      f'"{sys.executable}" "{__file__}"')
+                                      f'"{pythonw}" "{app}"')
                 else:
                     try:
                         winreg.DeleteValue(key, "Textblitz")
@@ -608,9 +731,9 @@ class SettingsWindow(tk.Tk):
 class _card:
     """Context manager that creates a card-style frame with padding."""
     def __init__(self, parent, bg: str, expand: bool = False):
-        self._frame = tk.Frame(parent, bg=bg, padx=14, pady=12)
+        self._frame = tk.Frame(parent, bg=bg, padx=10, pady=7)
         self._frame.pack(fill="both" if expand else "x",
-                         expand=expand, padx=4, pady=(0, 8))
+                         expand=expand, padx=4, pady=(0, 5))
 
     def __enter__(self) -> tk.Frame:
         return self._frame
@@ -661,13 +784,13 @@ def _scrollable(parent: ttk.Frame) -> ttk.Frame:
 def _plain(parent: ttk.Frame) -> ttk.Frame:
     """Simple frame without scrollbar — for tabs whose content always fits."""
     frm = ttk.Frame(parent)
-    frm.pack(fill="both", expand=True, padx=12, pady=8)
+    frm.pack(fill="both", expand=True, padx=8, pady=4)
     return frm
 
 
 def _header(parent, text: str):
     ttk.Label(parent, text=text, style="Header.TLabel").pack(
-        anchor="w", pady=(0, 6))
+        anchor="w", pady=(0, 4))
 
 
 def _row_label(parent, text: str, row: int):

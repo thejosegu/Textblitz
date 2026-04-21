@@ -21,7 +21,10 @@ def apply_snippets(text: str, snippets: list) -> str:
 
 
 def process(text: str, mode: str, api_key: str,
-            prompt_template: str, emoji_density: int = 5) -> str:
+            prompt_template: str, emoji_density: int = 5,
+            model: str | None = None,
+            temperature: float = 0.7,
+            max_tokens: int = 1024) -> str:
     """Transform *text* for the given mode. Normal mode is a no-op."""
     if mode == "normal":
         return text
@@ -31,37 +34,43 @@ def process(text: str, mode: str, api_key: str,
         system_prompt = system_prompt.replace("{density}", str(emoji_density))
 
     if api_key.startswith("gsk_"):
-        return _groq(text, system_prompt, api_key)
-    return _openai(text, system_prompt, api_key)
+        return _groq(text, system_prompt, api_key,
+                     model or "llama-3.1-8b-instant", temperature, max_tokens)
+    return _openai(text, system_prompt, api_key,
+                   model or "gpt-4o-mini", temperature, max_tokens)
 
 
 # ── providers ─────────────────────────────────────────────────────────
 
-def _openai(text: str, system_prompt: str, api_key: str) -> str:
+def _openai(text: str, system_prompt: str, api_key: str,
+            model: str = "gpt-4o-mini", temperature: float = 0.7,
+            max_tokens: int = 1024) -> str:
     import openai
     client = openai.OpenAI(api_key=api_key)
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": text},
         ],
-        max_tokens=1024,
-        temperature=0.7,
+        max_tokens=max_tokens,
+        temperature=temperature,
     )
     return resp.choices[0].message.content.strip()
 
 
-def _groq(text: str, system_prompt: str, api_key: str) -> str:
+def _groq(text: str, system_prompt: str, api_key: str,
+          model: str = "llama-3.1-8b-instant", temperature: float = 0.7,
+          max_tokens: int = 1024) -> str:
     from groq import Groq
     client = Groq(api_key=api_key)
     resp = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": text},
         ],
-        max_tokens=1024,
-        temperature=0.7,
+        max_tokens=max_tokens,
+        temperature=temperature,
     )
     return resp.choices[0].message.content.strip()

@@ -13,12 +13,25 @@ Usage
 """
 from __future__ import annotations
 
+import ctypes
 import sys
 import threading
+
+# DPI-Awareness vor allen GUI-Importen setzen, damit Windows kein unscharfes
+# Bitmap-Upscaling anwendet (z. B. bei 125 % Anzeigeskalierung).
+try:
+    ctypes.windll.shcore.SetProcessDpiAwarenessContext(-4)  # PER_MONITOR_AWARE_V2
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
 from concurrent.futures import ThreadPoolExecutor
 
 import log as applog
+import overlay
 import toast
+import transcriber as _transcriber
 from config import Config
 from hotkeys import HotkeyListener
 from injector import inject
@@ -35,6 +48,8 @@ class Textblitz:
         self._recorder = Recorder()
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._settings_lock = threading.Lock()  # prevent multiple settings windows
+        self._busy_lock = threading.Lock()       # prevent overlapping recordings/pipelines
+        self._recording_active = False           # True only when recording actually started
 
         self._tray = TrayIcon(
             on_open_settings=self._open_settings,
@@ -44,13 +59,25 @@ class Textblitz:
             get_hotkeys=lambda: self._config.hotkeys,
             on_start=self._on_recording_start,
             on_stop=self._on_recording_stop,
+            get_record_mode=lambda: self._config.record_mode,
         )
 
     # ── lifecycle ─────────────────────────────────────────────────────
     def run(self):
         self._hotkeys.start()
+        if self._config.use_local_whisper:
+            threading.Thread(
+                target=self._preload_model, daemon=True, name="model-preload"
+            ).start()
         print("[Textblitz] gestartet — bereit")
         self._tray.run()  # blocks until quit
+
+    def _preload_model(self):
+        try:
+            _transcriber.load_local_model(self._config.whisper_model_path or None)
+            applog.add("Lokales Modell geladen")
+        except Exception as exc:
+            applog.add(f"Modell-Vorladen fehlgeschlagen: {exc}")
 
     def _quit(self):
         print("[Textblitz] wird beendet…")
@@ -60,36 +87,64 @@ class Textblitz:
 
     # ── hotkey callbacks (called from pynput thread) ──────────────────
     def _on_recording_start(self, mode: str):
-        if not self._config.api_key:
+        print(f"[DBG] start mode={mode} api={'ok' if self._config.api_key else 'LEER'} local={self._config.use_local_whisper}", file=sys.stderr, flush=True)
+        if not self._config.api_key and not self._config.use_local_whisper:
             applog.add("Kein API-Key gesetzt — Einstellungen öffnen")
             self._tray.set_status("error")
             self._open_settings()
             return
 
+        if not self._busy_lock.acquire(blocking=False):
+            applog.add("Aufnahme ignoriert — vorherige Verarbeitung läuft noch")
+            return
+
+        self._recording_active = True
         applog.add(f"Aufnahme gestartet ({mode})")
         self._tray.set_status("recording", mode=mode)
+        overlay.show_recording(mode)
         self._recorder.start()
+        print(f"[DBG] recorder gestartet", file=sys.stderr, flush=True)
 
     def _on_recording_stop(self, mode: str):
+        if not self._recording_active:
+            return  # start was ignored (busy lock held) — don't touch the lock
+        self._recording_active = False
+
         applog.add(f"Aufnahme gestoppt ({mode})")
         audio_buf = self._recorder.stop()
+        print(f"[DBG] stop audio_buf={'None' if audio_buf is None else f'{audio_buf.getbuffer().nbytes} bytes'}", file=sys.stderr, flush=True)
         if audio_buf is None:
             applog.add("Keine Audiodaten — zu kurze Aufnahme?")
+            overlay.hide()
+            self._busy_lock.release()
             self._tray.set_status("ready")
             return
 
         self._tray.set_status("processing", mode=mode)
-        self._executor.submit(self._pipeline, audio_buf, mode)
+        overlay.show_processing(mode)
+        try:
+            self._executor.submit(self._pipeline, audio_buf, mode)
+        except Exception:
+            overlay.hide()
+            self._busy_lock.release()
+            self._tray.set_status("error")
 
     # ── processing pipeline (runs in thread-pool) ─────────────────────
     def _pipeline(self, audio_buf, mode: str):
         try:
+            print(f"[DBG] pipeline start, use_local={self._config.use_local_whisper}", file=sys.stderr, flush=True)
             transcript = transcribe(
                 audio_buf,
                 api_key=self._config.api_key,
                 language=self._config.whisper_language,
                 proper_nouns=self._config.proper_nouns or None,
+                model=(self._config.whisper_model_groq
+                       if self._config.api_key.startswith("gsk_")
+                       else self._config.whisper_model_openai),
+                use_local=self._config.use_local_whisper,
+                model_path=self._config.whisper_model_path or None,
             )
+            print(f"[DBG] transcript={transcript!r}", file=sys.stderr, flush=True)
             applog.add(f"Transkript ({mode}): {transcript!r}")
 
             if mode != "normal":
@@ -99,6 +154,11 @@ class Textblitz:
                     api_key=self._config.api_key,
                     prompt_template=self._config.get_prompt(mode),
                     emoji_density=self._config.emoji_density,
+                    model=(self._config.chat_model_groq
+                           if self._config.api_key.startswith("gsk_")
+                           else self._config.chat_model_openai),
+                    temperature=self._config.temperature,
+                    max_tokens=self._config.max_tokens,
                 )
                 applog.add(f"Verarbeitet ({mode}): {result!r}")
             else:
@@ -106,7 +166,10 @@ class Textblitz:
 
             applog.set_last(transcript, result, mode)
             result = apply_snippets(result, self._config.snippets)
+            print(f"[DBG] inject: {result!r}", file=sys.stderr, flush=True)
             inject(result)
+            print(f"[DBG] inject done", file=sys.stderr, flush=True)
+            overlay.hide()
             toast.show(result)
             self._tray.set_status("ready")
 
@@ -114,8 +177,12 @@ class Textblitz:
             msg = str(exc)
             applog.set_error(msg)
             print(f"[Fehler] {msg}", file=sys.stderr)
+            overlay.hide()
             self._tray.set_status("error")
             threading.Timer(3.0, lambda: self._tray.set_status("ready")).start()
+
+        finally:
+            self._busy_lock.release()
 
     # ── settings ──────────────────────────────────────────────────────
     def _open_settings(self):

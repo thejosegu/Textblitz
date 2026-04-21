@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python -c \"from config import Config; from recorder import Recorder; from hotkeys import HotkeyListener, parse_hotkey; from tray import TrayIcon; print\\('Imports OK'\\)\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import faster_whisper; import inspect; import faster_whisper.audio; print\\(inspect.getsource\\(faster_whisper.audio\\)\\)\")"
     ]
   }
 }

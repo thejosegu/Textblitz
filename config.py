@@ -1,11 +1,20 @@
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
+
+def _app_dir() -> Path:
+    """Directory next to the EXE (frozen) or next to this source file (dev)."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent
+
+
+load_dotenv(_app_dir() / ".env")
 
 DEFAULT_CONFIG = {
     "api_key": "",
@@ -39,6 +48,14 @@ DEFAULT_CONFIG = {
     "emoji_density": 5,
     "proper_nouns": [],
     "autostart": False,
+    "whisper_model_openai": "whisper-1",
+    "whisper_model_groq":   "whisper-large-v3-turbo",
+    "chat_model_openai":    "gpt-4o-mini",
+    "chat_model_groq":      "llama-3.1-8b-instant",
+    "temperature":          0.7,
+    "max_tokens":           1024,
+    "use_local_whisper":    False,
+    "whisper_model_path":   "",
     "snippets": [
         {"keyword": "freundliche gr\u00fc\u00dfe", "text": "Mit freundlichen Gr\u00fc\u00dfen"},
         {"keyword": "vielen dank",      "text": "Vielen Dank und mit freundlichen Gr\u00fc\u00dfen"},
@@ -46,7 +63,7 @@ DEFAULT_CONFIG = {
     ],
 }
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
+CONFIG_PATH = _app_dir() / "config.json"
 
 
 class Config:
@@ -87,7 +104,7 @@ class Config:
     def api_key(self, v: str):
         # Key wird NICHT in config.json gespeichert — nur in .env und Umgebungsvariable
         os.environ["GROQ_API_KEY"] = v
-        env_path = Path(__file__).parent / ".env"
+        env_path = _app_dir() / ".env"
         env_path.write_text(f"GROQ_API_KEY={v}\n", encoding="utf-8")
 
     @property
@@ -158,6 +175,70 @@ class Config:
     @snippets.setter
     def snippets(self, v: list):
         self._data["snippets"] = v
+
+    @property
+    def whisper_model_openai(self) -> str:
+        return self._data.get("whisper_model_openai", "whisper-1")
+
+    @whisper_model_openai.setter
+    def whisper_model_openai(self, v: str):
+        self._data["whisper_model_openai"] = v
+
+    @property
+    def whisper_model_groq(self) -> str:
+        return self._data.get("whisper_model_groq", "whisper-large-v3-turbo")
+
+    @whisper_model_groq.setter
+    def whisper_model_groq(self, v: str):
+        self._data["whisper_model_groq"] = v
+
+    @property
+    def chat_model_openai(self) -> str:
+        return self._data.get("chat_model_openai", "gpt-4o-mini")
+
+    @chat_model_openai.setter
+    def chat_model_openai(self, v: str):
+        self._data["chat_model_openai"] = v
+
+    @property
+    def chat_model_groq(self) -> str:
+        return self._data.get("chat_model_groq", "llama-3.1-8b-instant")
+
+    @chat_model_groq.setter
+    def chat_model_groq(self, v: str):
+        self._data["chat_model_groq"] = v
+
+    @property
+    def temperature(self) -> float:
+        return float(self._data.get("temperature", 0.7))
+
+    @temperature.setter
+    def temperature(self, v: float):
+        self._data["temperature"] = float(v)
+
+    @property
+    def max_tokens(self) -> int:
+        return int(self._data.get("max_tokens", 1024))
+
+    @max_tokens.setter
+    def max_tokens(self, v: int):
+        self._data["max_tokens"] = int(v)
+
+    @property
+    def use_local_whisper(self) -> bool:
+        return bool(self._data.get("use_local_whisper", False))
+
+    @use_local_whisper.setter
+    def use_local_whisper(self, v: bool):
+        self._data["use_local_whisper"] = bool(v)
+
+    @property
+    def whisper_model_path(self) -> str:
+        return self._data.get("whisper_model_path", "")
+
+    @whisper_model_path.setter
+    def whisper_model_path(self, v: str):
+        self._data["whisper_model_path"] = v
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

@@ -1,15 +1,15 @@
-# Blitztext — Technical Specification
+# Textblitz — Technical Specification
 
-**Version:** 1.0  
-**Stand:** April 2025  
+**Version:** 1.1  
+**Stand:** April 2026  
 **Plattform:** Windows 10/11  
-**Sprache:** Python 3.12+
+**Sprache:** Python 3.14+
 
 ---
 
 ## 1. Übersicht
 
-Blitztext ist eine Windows System Tray App, die per Tastenkombination Sprache in Text umwandelt und diesen direkt an der aktuellen Cursorposition einfügt — ohne Fensterwechsel, ohne manuelles Einfügen. Die App läuft dauerhaft im Hintergrund und ist in jeder Anwendung nutzbar.
+Textblitz ist eine Windows System Tray App, die per Tastenkombination Sprache in Text umwandelt und diesen direkt an der aktuellen Cursorposition einfügt — ohne Fensterwechsel, ohne manuelles Einfügen. Die App läuft dauerhaft im Hintergrund und ist in jeder Anwendung nutzbar.
 
 ### Kernfunktion
 
@@ -82,12 +82,15 @@ TrayIcon → "processing"
       ▼
 transcriber.transcribe()  ← Whisper API (OpenAI oder Groq)
       │
-      ├─ mode == "normal" ──────────────────────────────→ inject()
+      ├─ mode == "normal" ──────────────────────────────→ apply_snippets() → inject()
       │
       └─ mode in {plus, rage, emoji}
               │
               ▼
         processor.process()   ← GPT-4o-mini oder llama-3.1-8b
+              │
+              ▼
+        apply_snippets()      ← Keyword→Text-Ersetzung (case-insensitive)
               │
               ▼
            inject()           ← clipboard + Ctrl+V
@@ -105,7 +108,7 @@ transcriber.transcribe()  ← Whisper API (OpenAI oder Groq)
 
 ### `main.py` — Einstiegspunkt & Orchestrierung
 
-Klasse `Blitztext` koordiniert alle Komponenten.
+Klasse `Textblitz` koordiniert alle Komponenten.
 
 | Methode | Beschreibung |
 |---------|-------------|
@@ -121,11 +124,12 @@ Klasse `Blitztext` koordiniert alle Komponenten.
 
 Persistenz via `config.json` im Projektverzeichnis. Deep-merge mit `DEFAULT_CONFIG` bei jedem Laden — neue Felder werden automatisch befüllt.
 
-**Schema:**
+**API-Key-Speicherung:** Der Key wird **ausschließlich** in `.env` gespeichert (niemals in `config.json`). `load_dotenv()` lädt ihn beim Start in `os.environ["GROQ_API_KEY"]`. Der `api_key`-Setter schreibt direkt in `.env` und die Umgebungsvariable; `save()` filtert `api_key` aus den JSON-Daten heraus.
+
+**Schema `config.json`** (api_key wird nie geschrieben):
 
 ```json
 {
-  "api_key": "sk-... oder gsk_...",
   "whisper_language": "auto",
   "record_mode": "hold",
   "hotkeys": {
@@ -141,8 +145,17 @@ Persistenz via `config.json` im Projektverzeichnis. Deep-merge mit `DEFAULT_CONF
   },
   "emoji_density": 5,
   "proper_nouns": ["Name1", "Name2"],
-  "autostart": false
+  "autostart": false,
+  "snippets": [
+    {"keyword": "freundliche grüße", "text": "Mit freundlichen Grüßen"},
+    ...
+  ]
 }
+```
+
+**`.env`** (gitignored):
+```
+GROQ_API_KEY=gsk_...
 ```
 
 **Hotkey-Format:** pynput Key-Attributnamen, durch `+` getrennt.  
@@ -215,6 +228,8 @@ Proper Nouns werden als Whisper `prompt`-Parameter übergeben (verbessert Erkenn
 
 Im Emoji-Prompt wird `{density}` durch den konfigurierten Wert (1–10) ersetzt.
 
+**`apply_snippets(text, snippets)`:** Wird nach jeder Verarbeitung (alle Modi) aufgerufen. Ersetzt Keywords case-insensitiv durch den definierten Ersatztext via `re.sub`. Snippets werden in `config.json` gespeichert und im Snippets-Tab verwaltet.
+
 ---
 
 ### `injector.py` — Text-Einbindung
@@ -245,10 +260,6 @@ Icons werden zur Laufzeit mit Pillow generiert (64×64 RGBA, gefüllter Kreis + 
 
 Tray-Menü: **Einstellungen** / **Beenden**.
 
----
-
-### `log.py` — Shared Event Log
-
 Modulweiter Zustand (kein Objekt nötig):
 
 - `_entries`: `deque(maxlen=100)` — Ring-Buffer mit Zeitstempel
@@ -262,7 +273,7 @@ Modulweiter Zustand (kein Objekt nötig):
 Borderless `tkinter.Tk`-Fenster, läuft in eigenem Daemon-Thread:
 
 - Position: unten rechts, 20 px Abstand zum Bildschirmrand, 60 px über Taskleiste
-- Zeigt: Titel „✓ Blitztext — Text eingefügt" + erste 60 Zeichen der Ausgabe
+- Zeigt: Titel „✓ Textblitz — Text eingefügt" + erste 60 Zeichen der Ausgabe
 - Transparenz: 93% (`-alpha 0.93`)
 - Lebensdauer: 2.800 ms, danach `root.destroy()`
 
@@ -270,19 +281,24 @@ Borderless `tkinter.Tk`-Fenster, läuft in eigenem Daemon-Thread:
 
 ### `settings_ui.py` — Einstellungsfenster
 
-`customtkinter.CTk`, 640×680 px, Dark Mode, 5 Tabs:
+`tkinter.Tk` + `sv-ttk` (Windows 11 Fluent Design), 640×820 px, folgt System Dark/Light Mode, 6 Tabs:
 
 | Tab | Inhalt |
 |-----|--------|
-| **Allgemein** | API Key (masked), Whisper-Sprache, Aufnahme-Modus, Autostart |
+| **Allgemein** | API Key (masked, wird in `.env` gespeichert), Whisper-Sprache, Aufnahme-Modus, Autostart |
 | **Hotkeys** | Hotkey-Aufnahme per pynput-Listener-Dialog für alle 4 Modi |
 | **Modi** | System-Prompts für Plus/Rage/Emoji, Emoji-Dichte-Slider |
+| **Snippets** | Keyword→Text-Paare, beliebig viele, per „+ Snippet hinzufügen" erweiterbar |
 | **Eigennamen** | Freitext-Liste, ein Name pro Zeile |
 | **Feedback** | API-Status, letztes Ergebnis, Umgebung, Live-Log (auto-refresh 2 s) |
 
-**Hotkey-Aufnahme-Dialog:** Öffnet `CTkToplevel`, startet temporären `pynput.Listener`. Alle gedrückten Tasten werden gesammelt (`pressed |= {key}`), beim ersten `on_release` wird der Combo-String gespeichert und der Dialog geschlossen.
+Globale **Speichern** / **Abbrechen**-Buttons am unteren Fensterrand — immer sichtbar (via `side="bottom"` vor dem Notebook gepackt).
 
-**Autostart:** Schreibt/löscht Registry-Eintrag `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Blitztext`.
+**Hotkey-Aufnahme-Dialog:** Öffnet `tk.Toplevel`, startet temporären `pynput.Listener`. Alle gedrückten Tasten werden gesammelt, beim ersten `on_release` wird der Combo-String gespeichert und der Dialog geschlossen.
+
+**Autostart:** Schreibt/löscht Registry-Eintrag `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Textblitz`.
+
+**Einstellungen sperren Hotkeys:** Während das Fenster offen ist, wird `HotkeyListener.capturing = True` gesetzt — verhindert versehentliche Aufnahmen beim Konfigurieren.
 
 ---
 
@@ -297,8 +313,9 @@ Borderless `tkinter.Tk`-Fenster, läuft in eigenem Daemon-Thread:
 | sounddevice | 0.5.5 | Audioaufnahme via PortAudio |
 | numpy | 2.3.5 | Audio-Frame-Buffer |
 | pyperclip | 1.11.0 | Clipboard-Zugriff |
-| customtkinter | 5.2.2 | Modernes UI-Framework (basiert auf tkinter) |
+| sv-ttk | — | Windows 11 Fluent Design für tkinter |
 | Pillow | 12.1.0 | Tray-Icon-Generierung |
+| python-dotenv | — | `.env`-Datei laden |
 
 **Laufzeitumgebung:** Python 3.14.2, Windows 11
 
@@ -329,7 +346,6 @@ Borderless `tkinter.Tk`-Fenster, läuft in eigenem Daemon-Thread:
 - **Suppress=False:** Die Hotkey-Tasten werden nicht blockiert — das Betriebssystem verarbeitet sie weiterhin. Bei Single-Key-Hotkeys kann das unerwünschte Nebeneffekte in bestimmten Apps haben.
 - **Kein lokales Modell:** Alle Transkriptionen erfordern eine Internetverbindung und kosten API-Credits.
 - **Nur Windows:** pystray verhält sich auf macOS/Linux anders; die App ist nicht portiert.
-- **customtkinter 5.2.2 + Python 3.14:** Inkompatibilität bekannt — `CTkSegmentedButton._variable` wird bei fehlgeschlagenem `__init__` nicht gesetzt, was beim `destroy()` zu einem `AttributeError` führt. Workaround: Fenster nie zerstören (siehe Abschnitt `settings_ui.py`).
 
 ---
 
@@ -345,36 +361,55 @@ Borderless `tkinter.Tk`-Fenster, läuft in eigenem Daemon-Thread:
 
 ## 8. Nachträgliche Änderungen & Erkenntnisse
 
-### 8.1 Konsolenloser Start (`blitztext.pyw`)
+### 8.1 Umbenennung: Blitztext → Textblitz
 
-**Problem:** `python main.py` öffnete ein Konsolenfenster.  
-**Lösung:** Launcher `blitztext.pyw` — Windows führt `.pyw`-Dateien automatisch mit `pythonw.exe` aus (kein Fenster). `stdout`/`stderr` werden in `blitztext.log` umgeleitet.
+App wurde von „Blitztext" in „Textblitz" umbenannt. Betroffen: `main.py`, `tray.py`, `toast.py`, `settings_ui.py`, Einstiegspunkt `textblitz.pyw` (ehemals `blitztext.pyw`), Registry-Autostart-Key, Tray-Icons (Buchstabe „T").
 
-```
-Starten: Doppelklick auf blitztext.pyw
-Logs:    blitztext.log (im Projektverzeichnis)
-```
+---
 
-### 8.2 Einstellungsfenster nur einmal öffenbar (Bug)
+### 8.2 API-Key-Sicherheit (.env statt config.json)
 
-**Ursache:** `SettingsWindow` erbte von `ctk.CTk`. Nach `destroy()` ist der Tcl-Interpreter beendet — eine neue Instanz kann im selben Prozess nicht sauber erstellt werden.
-
-**Zweite Ursache:** customtkinter 5.2.2 ist nicht thread-safe gegenüber Python 3.14: GUI-Calls aus einem Nicht-Main-Thread scheitern mit `RuntimeError: main thread is not in main loop`.
+**Problem:** Groq API-Key war in `config.json` gespeichert und wurde versehentlich nach GitHub gepusht → GitHub Push Protection blockierte den Push.
 
 **Lösung:**
-- `SettingsWindow` bleibt `ctk.CTk`, wird aber **einmalig** beim ersten Öffnen erstellt und nie zerstört
+- API-Key wird **ausschließlich** in `.env` gespeichert (`.gitignore`d)
+- `config.py` lädt per `load_dotenv()` beim Start; `api_key`-Setter schreibt direkt in `.env`
+- `save()` filtert `api_key` aus `config.json` heraus — Key kann nie mehr versehentlich committet werden
+
+---
+
+### 8.3 Konsolenloser Start (`textblitz.pyw`)
+
+**Problem:** `python main.py` öffnete ein Konsolenfenster.  
+**Lösung:** Launcher `textblitz.pyw` — Windows führt `.pyw`-Dateien automatisch mit `pythonw.exe` aus (kein Fenster). `stdout`/`stderr` werden in `textblitz.log` umgeleitet.
+
+```
+Starten: Doppelklick auf textblitz.pyw
+Logs:    textblitz.log (im Projektverzeichnis)
+```
+
+---
+
+### 8.4 Einstellungsfenster: Migration von customtkinter → tkinter + sv-ttk
+
+**Problem:** customtkinter 5.2.2 ist nicht kompatibel mit Python 3.14: GUI-Calls aus Nicht-Main-Threads scheitern mit `RuntimeError: main thread is not in main loop`. Nach `destroy()` ist der Tcl-Interpreter beendet — eine neue Instanz kann nicht erstellt werden.
+
+**Lösung:**
+- Wechsel zu `tkinter.Tk` + `sv-ttk` (Windows 11 Fluent Design, folgt System Dark/Light Mode)
+- `SettingsWindow` wird **einmalig** erstellt und nie zerstört
 - Öffnen = `deiconify()` + `_reload_values()`; Schließen = `withdraw()`
 - Ein dauerhafter Daemon-Thread (`settings-ui`) besitzt das Fenster und empfängt Öffnen-Anfragen via `queue.Queue`
-- Der aufrufende Thread blockiert via `threading.Event` bis das Fenster geschlossen wird
 
 ```
 settings_ui.py:
-  _ui_worker()          ← dauerhafter Thread, erstellt SettingsWindow einmalig
-  SettingsWindow.show() ← reload + deiconify
+  _ui_worker()            ← dauerhafter Thread, erstellt SettingsWindow einmalig
+  SettingsWindow.show()   ← reload + deiconify
   SettingsWindow._close() ← withdraw (kein destroy)
 ```
 
-### 8.3 Multi-Key-Hotkeys ohne Funktion (Bug)
+---
+
+### 8.5 Multi-Key-Hotkeys ohne Funktion (Bug)
 
 **Ursache:** `ctrl_r` (Normal-Modus) wurde sofort ausgelöst, bevor `alt_r` gedrückt werden konnte — `ctrl_r+alt_r` (Rage-Modus) wurde nie erreicht.
 
@@ -385,4 +420,15 @@ hotkeys.py:
   _on_press()      ← startet/resettet threading.Timer(0.05, _try_trigger)
   _try_trigger()   ← wählt längste Combo aus self._pressed
   _on_release()    ← bricht pending Timer ab falls Taste vor Auslösung losgelassen
-```
+``` 
+
+---
+
+### 8.6 Snippets-Feature
+
+Keyword→Text-Ersetzung nach der Transkription. Konfigurierbar im Einstellungsfenster (Tab „Snippets").
+
+- `processor.apply_snippets(text, snippets)` — iteriert die Snippet-Liste, ersetzt per `re.sub` case-insensitiv
+- Wird in `_pipeline()` nach allen Modi (Normal + KI-Modi) angewendet
+- Gespeichert in `config.json` als Array von `{keyword, text}`-Objekten
+
