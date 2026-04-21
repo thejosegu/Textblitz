@@ -1,7 +1,7 @@
-"""Konsolenloser Einstiegspunkt für Textblitz.
+"""Konsolenloser Einstiegspunkt für Blitztext.
 
-Starte mit: pythonw textblitz.pyw  (oder Doppelklick)
-stdout/stderr werden in textblitz.log umgeleitet.
+Starte mit: pythonw blitztext.pyw  (oder Doppelklick)
+stdout/stderr werden in blitztext.log umgeleitet.
 """
 import sys
 import os
@@ -24,7 +24,7 @@ if os.path.isdir(_libs) and _libs not in sys.path:
             os.add_dll_directory(_pkg_dir)
 
 # Logdatei neben der EXE / dem Skript
-_log = open(os.path.join(_base, "textblitz.log"), "a", encoding="utf-8", buffering=1)
+_log = open(os.path.join(_base, "blitztext.log"), "a", encoding="utf-8", buffering=1)
 sys.stdout = _log
 sys.stderr = _log
 

@@ -1,4 +1,4 @@
-"""Textblitz — Windows speech-to-text tray app.
+"""Blitztext — Windows speech-to-text tray app.
 
 Architecture
 ------------
@@ -42,7 +42,7 @@ from transcriber import transcribe
 from tray import TrayIcon
 
 
-class Textblitz:
+class Blitztext:
     def __init__(self):
         self._config = Config()
         self._recorder = Recorder()
@@ -69,7 +69,7 @@ class Textblitz:
             threading.Thread(
                 target=self._preload_model, daemon=True, name="model-preload"
             ).start()
-        print("[Textblitz] gestartet — bereit")
+        print("[Blitztext] gestartet — bereit")
         self._tray.run()  # blocks until quit
 
     def _preload_model(self):
@@ -80,7 +80,7 @@ class Textblitz:
             applog.add(f"Modell-Vorladen fehlgeschlagen: {exc}")
 
     def _quit(self):
-        print("[Textblitz] wird beendet…")
+        print("[Blitztext] wird beendet…")
         self._hotkeys.stop()
         self._executor.shutdown(wait=False)
         self._tray.stop()
@@ -216,7 +216,7 @@ class Textblitz:
 
 
 def main():
-    app = Textblitz()
+    app = Blitztext()
     app.run()
 
 

@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller Spec für Textblitz
-# Build: python -m PyInstaller textblitz.spec
+# PyInstaller Spec für Blitztext
+# Build: python -m PyInstaller blitztext.spec
 
 import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -9,7 +9,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 sv_ttk_datas = collect_data_files("sv_ttk")
 
 a = Analysis(
-    ["textblitz.pyw"],
+    ["blitztext.pyw"],
     pathex=["."],
     binaries=[],
     datas=sv_ttk_datas,
@@ -59,7 +59,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="Textblitz",
+    name="Blitztext",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

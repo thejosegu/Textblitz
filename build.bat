@@ -5,13 +5,13 @@ set LOGFILE=%~dp0build.log
 echo. > "%LOGFILE%"
 
 echo ============================================
-echo  Textblitz Build
+echo  Blitztext Build
 echo ============================================
 echo.
 
 :: PyInstaller
-echo [1/2] Erstelle Textblitz.exe ...
-python -m PyInstaller textblitz.spec --noconfirm --upx-dir "%~dp0" >> "%LOGFILE%" 2>&1
+echo [1/2] Erstelle Blitztext.exe ...
+python -m PyInstaller blitztext.spec --noconfirm --upx-dir "%~dp0" >> "%LOGFILE%" 2>&1
 if errorlevel 1 (
     echo.
     echo FEHLER: Build fehlgeschlagen. Details in build.log
@@ -41,7 +41,7 @@ if errorlevel 1 (
 
 echo.
 echo ============================================
-echo  Fertig: dist\Textblitz.exe
+echo  Fertig: dist\Blitztext.exe
 echo ============================================
 echo.
 if exist "%~dp0dist\whisper\model.bin" (
