@@ -16,6 +16,7 @@ from __future__ import annotations
 import ctypes
 import sys
 import threading
+import time
 
 # DPI-Awareness vor allen GUI-Importen setzen, damit Windows kein unscharfes
 # Bitmap-Upscaling anwendet (z. B. bei 125 % Anzeigeskalierung).
@@ -167,9 +168,10 @@ class Blitztext:
             applog.set_last(transcript, result, mode)
             result = apply_snippets(result, self._config.snippets)
             print(f"[DBG] inject: {result!r}", file=sys.stderr, flush=True)
+            overlay.hide()  # hide first so original window can regain focus
+            time.sleep(0.15)
             inject(result)
             print(f"[DBG] inject done", file=sys.stderr, flush=True)
-            overlay.hide()
             toast.show(result)
             self._tray.set_status("ready")
 
