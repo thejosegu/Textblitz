@@ -71,6 +71,14 @@ def _worker():
     mode_lbl.pack(side="left")
 
     root.withdraw()
+    # Prevent the overlay from stealing focus when shown (WS_EX_NOACTIVATE)
+    root.update_idletasks()
+    try:
+        hwnd = ctypes.windll.user32.GetParent(root.winfo_id()) or root.winfo_id()
+        ex = ctypes.windll.user32.GetWindowLongW(hwnd, -20)  # GWL_EXSTYLE
+        ctypes.windll.user32.SetWindowLongW(hwnd, -20, ex | 0x08000000)  # WS_EX_NOACTIVATE
+    except Exception:
+        pass
     _ready.set()
 
     # state

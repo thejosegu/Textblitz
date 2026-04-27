@@ -16,14 +16,14 @@
   "proper_nouns": [
     "grawaztt"
   ],
-  "autostart": false,
+  "autostart": true,
   "whisper_model_openai": "whisper-1",
   "whisper_model_groq": "whisper-large-v3-turbo",
   "chat_model_openai": "gpt-4o-mini",
   "chat_model_groq": "llama-3.1-8b-instant",
   "temperature": 0.7,
   "max_tokens": 1024,
-  "use_local_whisper": true,
+  "use_local_whisper": false,
   "whisper_model_path": "dist/whisper/model.bin",
   "snippets": [
     {
