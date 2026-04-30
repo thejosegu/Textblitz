@@ -1,58 +1,75 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller Spec für Blitztext
-# Build: python -m PyInstaller blitztext.spec
+"""PyInstaller spec for Blitztext — builds a portable Windows tray app."""
 
+from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
+import sys
 import os
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-# sv_ttk Theme-Dateien (TCL + PNG)
-sv_ttk_datas = collect_data_files("sv_ttk")
+# ---------------------------------------------------------------------------
+# Paths  (spec is executed with globals; __file__ is not available)
+# ---------------------------------------------------------------------------
+BASE = os.path.abspath(os.path.dirname(os.path.normcase(os.sys.argv[-1])))
 
+# ---------------------------------------------------------------------------
+# Analysis
+# ---------------------------------------------------------------------------
 a = Analysis(
-    ["blitztext.pyw"],
-    pathex=["."],
+    [os.path.join(BASE, "blitztext.pyw")],
+    pathex=[BASE],
     binaries=[],
-    datas=sv_ttk_datas,
+    datas=[
+        # Runtime assets (fonts, icons, default config)
+        (os.path.join(BASE, "assets"), "assets"),
+    ],
     hiddenimports=[
-        # pynput braucht die Backend-Implementierungen explizit
-        "pynput.keyboard._win32",
-        "pynput.mouse._win32",
-        # pystray Windows-Backend
-        "pystray._win32",
-        # tkinter
-        "tkinter",
-        "tkinter.ttk",
-        "tkinter.messagebox",
-        # sounddevice
+        # Core runtime imports
+        "openai",
+        "groq",
+        "pystray",
+        "pynput",
         "sounddevice",
-        "cffi",
-        "_cffi_backend",
-        # weitere
-        "winreg",
-        "PIL._tkinter_finder",
+        "numpy",
+        "pyperclip",
+        "sv_ttk",
+        "PIL",
+        "dotenv",
+        # faster-whisper pulls in ctranslate2/av/torch at runtime
+        "faster_whisper",
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Nicht benötigt — spart mehrere MB
-        "unittest", "email", "html", "http", "urllib",
-        "xml", "xmlrpc", "pydoc", "doctest",
-        "difflib", "calendar", "csv", "ftplib",
-        "imaplib", "poplib", "smtplib", "telnetlib",
-        "turtle", "curses", "readline",
-        "rich", "pygments",            # von openai/groq mitgezogen, aber nicht angezeigt
-        "faster_whisper", "ctranslate2", "huggingface_hub", "tokenizers",  # separat installieren
-        "matplotlib", "pandas",       # falls versehentlich gezogen
-        "scipy", "sklearn",
-        "IPython", "jupyter",
+        # Heavy ML frameworks that faster-whisper may pull in but we don't need
+        "torch",
+        "torchvision",
+        "torchaudio",
+        "tensorflow",
+        "tensorboard",
+        "transformers",
+        "matplotlib",
+        "scipy",
+        "pandas",
+        "sklearn",
+        "pytest",
+        "unittest",
+        "pydoc",
         "tkinter.test",
+        "IPython",
+        "jupyter",
+        "notebook",
+        "cv2",
     ],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
     noarchive=False,
 )
 
 pyz = PYZ(a.pure)
 
+# ---------------------------------------------------------------------------
+# Single-folder build (recommended for tray apps — faster startup than onefile)
+# ---------------------------------------------------------------------------
 exe = EXE(
     pyz,
     a.scripts,
@@ -63,12 +80,16 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,            # UPX-Komprimierung (~halbe Dateigröße); upx.exe muss im PATH oder Projektordner liegen
-    console=False,       # kein Konsolenfenster
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,          # --windowed  (no console window)
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon="icon.ico",   # optional: .ico-Datei für die EXE
+    icon=(os.path.join(BASE, "assets", "icon.ico")
+          if os.path.isfile(os.path.join(BASE, "assets", "icon.ico"))
+          else None),
 )

@@ -1,11 +1,19 @@
 """System tray icon using pystray with dynamically generated PIL icons."""
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont
 import pystray
 from pystray import MenuItem as Item
+
+
+def _app_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent
 
 # Status → (background color, label char)
 _STATUS_STYLES: dict[str, tuple[tuple[int, int, int], str]] = {
@@ -32,9 +40,15 @@ def _make_icon_image(status: str) -> Image.Image:
     pad = 3
     draw.ellipse([pad, pad, size - pad, size - pad], fill=color)
 
-    # Try system font, fall back to default
+    # Try bundled font, then system fonts, fall back to default
     font = None
-    for candidate in ["arial.ttf", "segoeui.ttf", "DejaVuSans.ttf"]:
+    candidates = [
+        str(_app_dir() / "assets" / "font.ttf"),   # bundled portable font
+        "segoeui.ttf",
+        "arial.ttf",
+        "DejaVuSans.ttf",
+    ]
+    for candidate in candidates:
         try:
             font = ImageFont.truetype(candidate, 28)
             break

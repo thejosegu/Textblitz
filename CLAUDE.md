@@ -20,6 +20,22 @@ Logs landen in `blitztext.log`. Die App erscheint als Tray-Icon — kein eigenes
 pip install -r requirements.txt
 ```
 
+## Portable Build erstellen
+
+Damit Blitztext auch auf PCs **ohne Python-Installation** läuft:
+
+```bash
+# 1. PyInstaller installieren
+pip install pyinstaller
+
+# 2. Build starten
+python build.py
+```
+
+Ausgabe: `dist/Blitztext/` — diesen Ordner kannst du zippen und auf jeden Windows-PC kopieren.
+
+**Wichtig:** `--onedir` (nicht `--onefile`) wird verwendet, damit der Start schneller ist und DLLs nicht bei jedem Start entpackt werden müssen.
+
 ## Architecture
 
 **Blitztext** ist eine Windows System Tray App (Python 3.14): Hotkey halten → Sprache aufnehmen → Whisper transkribieren → optional per GPT nachbearbeiten → Text an Cursorposition einfügen.

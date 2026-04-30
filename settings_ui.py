@@ -710,17 +710,22 @@ class SettingsWindow(tk.Tk):
         import winreg
         reg_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
-        # Prefer pythonw.exe (no console window); fall back to sys.executable.
-        _candidate = Path(sys.executable).parent / "pythonw.exe"
-        pythonw = str(_candidate if _candidate.exists() else Path(sys.executable))
-        app = str(Path(__file__).resolve().parent / "blitztext.pyw")
+        # Portable: use the actual executable path (frozen EXE or pythonw script)
+        if getattr(sys, "frozen", False):
+            # Frozen build: just the EXE path
+            app_cmd = f'"{sys.executable}"'
+        else:
+            # Dev mode: pythonw + script
+            _candidate = Path(sys.executable).parent / "pythonw.exe"
+            pythonw = str(_candidate if _candidate.exists() else Path(sys.executable))
+            app = str(Path(__file__).resolve().parent / "blitztext.pyw")
+            app_cmd = f'"{pythonw}" "{app}"'
 
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_path, 0,
                             winreg.KEY_WRITE) as key:
             if enable:
-                winreg.SetValueEx(key, "Blitztext", 0, winreg.REG_SZ,
-                                  f'"{pythonw}" "{app}"')
-                print(f"[Autostart] aktiviert: \"{pythonw}\" \"{app}\"")
+                winreg.SetValueEx(key, "Blitztext", 0, winreg.REG_SZ, app_cmd)
+                print(f"[Autostart] aktiviert: {app_cmd}")
             else:
                 try:
                     winreg.DeleteValue(key, "Blitztext")
