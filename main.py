@@ -66,12 +66,15 @@ class Blitztext:
     # ── lifecycle ─────────────────────────────────────────────────────
     def run(self):
         self._hotkeys.start()
+        print("[Blitztext] gestartet — bereit")
+        self._tray.run(on_ready=self._on_tray_ready)  # blocks until quit
+
+    def _on_tray_ready(self):
+        """Called ~1s after tray icon appears — app is fully up."""
         if self._config.use_local_whisper:
             threading.Thread(
                 target=self._preload_model, daemon=True, name="model-preload"
             ).start()
-        print("[Blitztext] gestartet — bereit")
-        self._tray.run()  # blocks until quit
 
     def _preload_model(self):
         try:

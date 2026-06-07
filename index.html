@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blitztext4Win — Interne Projektdokumentation (Python Edition)</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #f78166;
+    --green: #2ECC71;
+    --orange: #F39C12;
+    --red: #E74C3C;
+    --code-bg: #0d1117;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding-bottom: 4rem;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+  /* Header */
+  .hero {
+    background: linear-gradient(135deg, #1a1f2e 0%, #161b22 50%, #1a1f2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 0 2.5rem;
+    text-align: center;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: #23863622;
+    border: 1px solid #238636;
+    color: #3fb950;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+  }
+  .hero h1 { font-size: 2.6rem; font-weight: 700; letter-spacing: -0.02em; }
+  .hero h1 span { color: var(--accent); }
+  .hero .tagline { color: var(--muted); font-size: 1.15rem; margin-top: 0.5rem; }
+
+  /* Section */
+  section { padding: 2.5rem 0; }
+  section + section { border-top: 1px solid var(--border); }
+  h2 { font-size: 1.6rem; margin-bottom: 1.2rem; color: #f0f6fc; }
+  h2 .num { color: var(--accent); margin-right: 0.5rem; font-weight: 400; }
+  h3 { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; color: #e6edf3; }
+
+  /* Value cards */
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin-top: 1rem;
+  }
+  .value-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .value-card:hover { border-color: var(--accent); }
+  .value-card .icon { font-size: 1.8rem; margin-bottom: 0.6rem; }
+  .value-card h4 { font-size: 1rem; margin-bottom: 0.4rem; color: #e6edf3; }
+  .value-card p { color: var(--muted); font-size: 0.9rem; }
+
+  /* Mode table */
+  .mode-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+  .mode-table th {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+  .mode-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mode-table kbd {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85rem;
+  }
+
+  /* Provider cards */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.2rem;
+    margin-top: 1rem;
+  }
+  .provider-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .provider-card.local {
+    border-color: #2ECC71;
+    background: #2ECC7108;
+  }
+  .provider-card .provider-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .provider-card .provider-model { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.8rem; }
+  .provider-card .cost { font-size: 0.8rem; color: var(--accent2); margin-bottom: 0.8rem; }
+  .provider-card .local-badge {
+    position: absolute;
+    top: 12px;
+    right: -28px;
+    background: var(--green);
+    color: #000;
+    padding: 2px 32px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    transform: rotate(45deg);
+    letter-spacing: 0.5px;
+  }
+
+  /* Tech stack */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.7rem;
+    margin-top: 1rem;
+  }
+  .stack-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .stack-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Pipeline flow */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .pipeline-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .pipeline-step strong { display: block; font-size: 0.75rem; color: var(--accent); margin-bottom: 3px; }
+  .pipeline-arrow { color: var(--muted); font-size: 1.2rem; }
+
+  /* Code block */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+    margin-top: 1rem;
+    overflow-x: auto;
+  }
+  .code-block code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.83rem;
+    color: #e6edf3;
+    white-space: pre;
+  }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .cmt { color: #8b949e; }
+  .code-block .fn { color: #d2a8ff; }
+  .code-block .num { color: #79c0ff; }
+
+  /* Warning box */
+  .notice {
+    background: #f7816622;
+    border: 1px solid #f78166;
+    border-radius: 8px;
+    padding: 1rem 1.3rem;
+    margin-top: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+  .notice .icon { font-size: 1.3rem; flex-shrink: 0; }
+  .notice .text { font-size: 0.88rem; color: #f78166; }
+  .notice .text strong { color: #f0f6fc; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+
+  .highlight { color: var(--green); font-weight: 600; }
+  .dim { color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<!-- ====== HERO ====== -->
+<div class="hero">
+  <div class="container">
+    <div class="badge">INTERN · v1.1 · April 2026 · Python Edition</div>
+    <h1><span>Blitztext</span>4Win</h1>
+    <p class="tagline">Sprich. Automatisch tippen lassen. In jeder App. Auf jedem Windows-PC.</p>
+  </div>
+</div>
+
+<!-- ====== 1. MEHRWERT ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">01</span> Mehrwert</h2>
+    <p class="dim">Blitztext4Win ist ein System-Tray-Tool für Windows, das gesprochene Sprache per Hotkey direkt an die Cursorposition schreibt — ohne Fensterwechsel, ohne manuelles Einfügen.</p>
+
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="icon">⚡</div>
+        <h4>Kein Kontextwechsel</h4>
+        <p>Hotkey drücken, sprechen, loslassen — der Text erscheint sofort am Cursor. Kein Fenster öffnen, nicht zwischen Apps wechseln.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🎯</div>
+        <h4>Drei KI-Modi</h4>
+        <p>Plus formuliert gesprochene Sprache in sauberen Text um. Rage macht aus frustrierten Ansagen höfliche Nachrichten. Emoji fügt automatisch passende Emojis ein.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🔒</div>
+        <h4>100% offline mit faster-whisper</h4>
+        <p>Dank <strong>faster-whisper</strong> läuft die Transkription komplett lokal auf der CPU — keine Internetverbindung, keine API-Kosten, keine Daten in der Cloud.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🎛️</div>
+        <h4>Voll konfigurierbar</h4>
+        <p>Sechs Tabs im Settings-Fenster: Hotkeys frei belegbar, Prompts editierbar, Snippets für Keyword-Ersetzung, Eigennamen für bessere Erkennung.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">📋</div>
+        <h4>Portabel & autark</h4>
+        <p>Eine EXE, kein Installer, keine Python-Installation nötig. Clipboard-Swap + Ctrl‑V funktioniert in jeder App, die Einfügen unterstützt.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🛡️</div>
+        <h4>API-Key-Sicherheit</h4>
+        <p>Keys leben ausschließlich in <code>.env</code> (gitignored). <code>config.json</code> enthält nie einen Key — kein versehentlicher Push mehr möglich.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 2. MODI ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">02</span> Die vier Modi</h2>
+    <table class="mode-table">
+      <thead>
+        <tr><th>Modus</th><th>Standard-Hotkey</th><th>Verhalten</th><th>API</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Normal</strong></td>
+          <td><kbd>Rechte Strg</kbd></td>
+          <td>Whisper-Transkript 1:1, keine Nachbearbeitung</td>
+          <td>Whisper</td>
+        </tr>
+        <tr>
+          <td><strong>Plus</strong></td>
+          <td><kbd>Rechte Alt</kbd></td>
+          <td>GPT formuliert gesprochene Sprache in sauberen Text um</td>
+          <td>Whisper + GPT / LLM</td>
+        </tr>
+        <tr>
+          <td><strong>Rage</strong></td>
+          <td><kbd>Rechte Strg</kbd> + <kbd>Rechte Alt</kbd></td>
+          <td>Wütender Text wird in höfliche, professionelle Nachricht umgeschrieben</td>
+          <td>Whisper + GPT / LLM</td>
+        </tr>
+        <tr>
+          <td><strong>Emoji</strong></td>
+          <td><kbd>Rechte Strg</kbd> + <kbd>Rechte Shift</kbd></td>
+          <td>Text bleibt erhalten, passende Emojis werden eingefügt</td>
+          <td>Whisper + GPT / LLM</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="dim" style="margin-top:0.8rem">Alle Hotkeys sind im Einstellungsfenster frei konfigurierbar. Unterstützte Tasten: ctrl_r/l, alt_r/l, shift_r/l, cmd, F13-F15, scroll_lock, pause.</p>
+  </div>
+</section>
+
+<!-- ====== 3. TECHNIK: Whisper & faster-whisper ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">03</span> Transkription — Whisper, faster-whisper &amp; Cloud</h2>
+
+    <div class="notice" style="border-color:var(--green);background:#2ECC710f;margin-bottom:1.5rem">
+      <span class="icon" style="font-size:1.4rem">⚡</span>
+      <div class="text" style="color:var(--text)">
+        <strong>Warum faster-whisper und nicht das reine Whisper?</strong><br>
+        <strong>faster-whisper ist keine eigene KI</strong>, sondern eine effizientere Laufzeitumgebung (<strong>CTranslate2</strong>) für Whisper-Modelle. Es ist <strong>bis zu ~4× schneller</strong>, braucht <strong>weniger RAM</strong> und läuft produktiv auf der <strong>CPU</strong> (int8-Quantisierung) — kein GPU-Zwang. Deshalb ist es der <strong>Default für lokale Transkription</strong> in Blitztext4Win.
+      </div>
+    </div>
+
+    <h3>Whisper vs. faster-whisper — Detailvergleich</h3>
+    <table class="mode-table">
+      <thead><tr><th></th><th>Whisper</th><th>faster-whisper</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Was ist es?</strong></td>
+          <td>Das Original-Sprachmodell von OpenAI für Speech-to-Text (und teilweise Übersetzung ins Englische).</td>
+          <td>Effizientere Ausführungsumgebung für Whisper-Modelle, umgesetzt mit <strong>CTranslate2</strong>. <strong>Keine neue KI</strong> — dasselbe Modell, schneller ausgeführt.</td>
+        </tr>
+        <tr>
+          <td><strong>Tempo</strong></td>
+          <td>Standard-Whisper (Referenzgeschwindigkeit)</td>
+          <td><span class="highlight">Bis zu ~4× schneller</span> in den meisten Setups</td>
+        </tr>
+        <tr>
+          <td><strong>Ressourcen</strong></td>
+          <td>Höherer RAM-Verbrauch, GPU dringend empfohlen</td>
+          <td><span class="highlight">Weniger RAM</span>, läuft produktiv auf CPU (int8-Quantisierung)</td>
+        </tr>
+        <tr>
+          <td><strong>Wann nehmen?</strong></td>
+          <td>Wenn man das originale OpenAI-Modell meint oder Beispiele exakt darauf aufbauen.</td>
+          <td><span class="highlight">Default für lokale Transkription</span> — bessere Geschwindigkeit, effizientere Hardware-Nutzung, kein Netzwerk nötig.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Drei Provider — eine App</h3>
+    <p class="dim">Blitztext4Win erkennt den Provider automatisch am API-Key-Präfix. Kein API-Key nötig → lokaler Modus.</p>
+
+    <div class="provider-grid">
+      <div class="provider-card local">
+        <div class="local-badge">LOKAL</div>
+        <div class="provider-name">🖥️ faster-whisper <span style="font-size:0.8rem;color:var(--muted)">(CTranslate2-Backend)</span></div>
+        <div class="provider-model">Systran/faster-whisper-small</div>
+        <div class="cost"><span class="highlight">$0.00</span> · unbegrenzt · kein Limit</div>
+        <p>Lokale Transkription — das Modell (~463 MB) wird einmalig von Hugging Face heruntergeladen und läuft danach komplett offline auf der CPU. <strong>Keine Internetverbindung, keine Kosten, keine Cloud.</strong></p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--muted)">ONNX Runtime · CPU int8 · ~1 GB RAM · Cache: <code>whisper/</code>-Ordner</p>
+      </div>
+      <div class="provider-card">
+        <div class="provider-name">☁️ OpenAI Whisper</div>
+        <div class="provider-model">whisper-1</div>
+        <div class="cost">$0.006 / Minute Audio <span style="font-size:0.75rem;color:var(--muted)">(kostenpflichtig)</span></div>
+        <p>Cloud-Transkription über die OpenAI API. Key-Präfix: <code>sk-</code>. Höchste Genauigkeit, aber internetabhängig und pro Minute abgerechnet.</p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--muted)">Free: 3 RPM · 200 RPD · $100/Monat Spending-Limit</p>
+      </div>
+      <div class="provider-card">
+        <div class="provider-name">⚡ Groq Whisper</div>
+        <div class="provider-model">whisper-large-v3-turbo</div>
+        <div class="cost">$0.0004 / Minute Audio · <span style="color:var(--green)">15× günstiger als OpenAI</span></div>
+        <p>Schnellste Cloud-Transkription über Groq. Key-Präfix: <code>gsk_</code>. Empfohlen bei bestehender Internetverbindung — kein Credit-Card-Zwang.</p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--muted)">Free: 20 RPM · 2.000 RPD · 2 Std Audio/Std · 8 Std Audio/Tag</p>
+      </div>
+    </div>
+
+    <h3>Free-Tier-Limits im Detail (Stand: Juni 2026)</h3>
+    <table class="mode-table">
+      <thead><tr><th>Limit</th><th>Groq</th><th>OpenAI</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Modell</strong></td><td>whisper-large-v3-turbo</td><td>whisper-1</td></tr>
+        <tr><td><strong>Requests pro Minute</strong></td><td><span class="highlight">20 RPM</span></td><td>3 RPM</td></tr>
+        <tr><td><strong>Requests pro Tag</strong></td><td><span class="highlight">2.000 RPD</span></td><td>200 RPD</td></tr>
+        <tr><td><strong>Audio-Sekunden pro Stunde</strong></td><td><span class="highlight">7.200 s (2 Std)</span></td><td>— (nur RPM/RPD)</td></tr>
+        <tr><td><strong>Audio-Sekunden pro Tag</strong></td><td><span class="highlight">28.800 s (8 Std)</span></td><td>— (nur RPM/RPD)</td></tr>
+        <tr><td><strong>Max. Dateigröße</strong></td><td>25 MB</td><td>25 MB</td></tr>
+        <tr><td><strong>Credit Card nötig?</strong></td><td><span class="highlight">Nein</span></td><td>Nein (Free Tier)</td></tr>
+        <tr><td><strong>Kosten (bezahlt)</strong></td><td>$0.0004/min</td><td>$0.006/min</td></tr>
+      </tbody>
+    </table>
+
+    <div class="notice" style="margin-top:1.5rem">
+      <span class="icon">💡</span>
+      <div class="text">
+        <strong>Praxis-Empfehlung:</strong> Groq-Free reicht für <strong>~8 Stunden Transkription pro Tag</strong> — massiv mehr als OpenAI-Free (200 Requests/Tag). Für dauerhafte Nutzung oder Offline-Szenarien ist <strong>faster-whisper lokal</strong> die beste Wahl: unbegrenzt, kostenlos, keine API-Limits.
+      </div>
+    </div>
+
+    <div class="notice" style="border-color:var(--accent);background:#58a6ff11">
+      <span class="icon" style="color:var(--accent)">🔐</span>
+      <div class="text" style="color:var(--text)">
+        <strong>faster-whisper = lokale Verarbeitung.</strong> Bei Auswahl von „Lokal" verlässt kein Audiomaterial den Rechner. Die gesamte Transkription findet auf der CPU statt — <strong>keine Cloud, keine API, kein Tracking.</strong> Ideal für vertrauliche Gespräche und Offline-Szenarien.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 4. ARCHITEKTUR ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">04</span> Architektur &amp; Datenfluss</h2>
+
+    <h3>Verarbeitungs-Pipeline</h3>
+    <div class="pipeline">
+      <div class="pipeline-step"><strong>Recorder</strong>Aufnahme</div>
+      <span class="pipeline-arrow">→</span>
+      <div class="pipeline-step"><strong>Whisper</strong>Transkription</div>
+      <span class="pipeline-arrow">→</span>
+      <div class="pipeline-step"><strong>GPT / LLM</strong>Verarbeitung</div>
+      <span class="pipeline-arrow">→</span>
+      <div class="pipeline-step"><strong>Snippets</strong>Korrektur</div>
+      <span class="pipeline-arrow">→</span>
+      <div class="pipeline-step"><strong>Injection</strong>Clipboard + Ctrl+V</div>
+      <span class="pipeline-arrow">→</span>
+      <div class="pipeline-step"><strong>Toast</strong>Benachrichtigung</div>
+    </div>
+
+    <h3>Threading-Modell</h3>
+    <table class="mode-table">
+      <thead><tr><th>Thread</th><th>Komponente</th><th>Aufgabe</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Main</strong></td><td>pystray</td><td>Win32 Message Loop — muss Main-Thread sein</td></tr>
+        <tr><td>Daemon</td><td>pynput Listener</td><td>Globale Tastaturereignisse (Hotkey-Erkennung)</td></tr>
+        <tr><td>ThreadPool (1)</td><td>Pipeline</td><td>transcribe → process → inject → toast</td></tr>
+        <tr><td>Daemon</td><td>tkinter + sv-ttk</td><td>Settings-Fenster (wird nie zerstört, nur withdrawn)</td></tr>
+        <tr><td>Daemon (kurz)</td><td>tkinter Toast</td><td>2.8s Overlay-Benachrichtigung unten rechts</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Audio-Parameter</h3>
+    <div class="code-block"><code><span class="kw">Sample Rate</span>: <span class="num">16.000 Hz</span>
+<span class="kw">Channels</span>:   <span class="num">1</span> (Mono)
+<span class="kw">Dtype</span>:      <span class="num">int16</span>
+<span class="kw">Backend</span>:    sounddevice (PortAudio)
+<span class="kw">Format</span>:     WAV BytesIO → API-Upload</code></div>
+
+    <h3>faster-whisper — Technische Details</h3>
+    <div class="code-block"><code><span class="cmt"># Modell-Ladung (einmalig, ~30s beim ersten Start)</span>
+<span class="kw">from</span> faster_whisper <span class="kw">import</span> WhisperModel
+model = WhisperModel(<span class="str">"whisper/models--Systran--faster-whisper-small"</span>,
+                     device=<span class="str">"cpu"</span>, compute_type=<span class="str">"int8"</span>)
+
+<span class="cmt"># Transkription (lokal, kein Netzwerk)</span>
+segments, _ = model.transcribe(audio_numpy, beam_size=<span class="num">5</span>)
+text = <span class="str">""</span>.join(seg.text <span class="kw">for</span> seg <span class="kw">in</span> segments)
+
+<span class="cmt"># Modell-Cache: whisper/ Ordner neben der EXE</span>
+<span class="cmt"># Download: ~463 MB von Hugging Face</span>
+<span class="cmt"># RAM: ~1 GB beim Laden, ~500 MB bei Inferenz</span></code></div>
+  </div>
+</section>
+
+<!-- ====== 5. TECH-STACK ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">05</span> Technologie-Stack</h2>
+
+    <div class="stack-grid">
+      <div class="stack-item"><span class="dot" style="background:#3776AB"></span> Python 3.14</div>
+      <div class="stack-item"><span class="dot" style="background:#2ECC71"></span> tkinter + sv-ttk (Fluent Design)</div>
+      <div class="stack-item"><span class="dot" style="background:#E74C3C"></span> pystray (System Tray)</div>
+      <div class="stack-item"><span class="dot" style="background:#F39C12"></span> pynput (globale Hotkeys)</div>
+      <div class="stack-item"><span class="dot" style="background:#58a6ff"></span> sounddevice (Audio)</div>
+      <div class="stack-item"><span class="dot" style="background:#a5d6ff"></span> numpy (Signalverarbeitung)</div>
+      <div class="stack-item"><span class="dot" style="background:#2ECC71"></span> <strong>faster-whisper</strong></div>
+      <div class="stack-item"><span class="dot" style="background:#F39C12"></span> CTranslate2 (Backend)</div>
+      <div class="stack-item"><span class="dot" style="background:#79c0ff"></span> ONNX Runtime</div>
+      <div class="stack-item"><span class="dot" style="background:#58a6ff"></span> OpenAI SDK</div>
+      <div class="stack-item"><span class="dot" style="background:#ff7b72"></span> Groq SDK</div>
+      <div class="stack-item"><span class="dot" style="background:#d2a8ff"></span> huggingface_hub</div>
+      <div class="stack-item"><span class="dot" style="background:#8b949e"></span> Pillow (Tray-Icons)</div>
+      <div class="stack-item"><span class="dot" style="background:#3fb950"></span> pyperclip (Clipboard)</div>
+      <div class="stack-item"><span class="dot" style="background:#f78166"></span> python-dotenv (.env)</div>
+      <div class="stack-item"><span class="dot" style="background:#8b949e"></span> PyInstaller (Build)</div>
+    </div>
+
+    <h3>Build &amp; Distribution</h3>
+    <table class="mode-table">
+      <thead><tr><th>Komponente</th><th>Größe</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>onnxruntime</td><td>~32 MB</td><td>ML-Inference-Engine für faster-whisper</td></tr>
+        <tr><td>av.libs (FFmpeg)</td><td>~19 MB</td><td>Audio-Decoding für lokales Whisper</td></tr>
+        <tr><td>ctranslate2</td><td>~17 MB</td><td>Whisper-Backend für CPU-Inferenz</td></tr>
+        <tr><td>PYZ.pyz</td><td>~14 MB</td><td>Komprimierter Python-Bytecode</td></tr>
+        <tr><td>numpy.libs (OpenBLAS)</td><td>~4 MB</td><td>Matrix-Operationen</td></tr>
+        <tr><td>Sonstiges</td><td>~11 MB</td><td>Python-DLL, Tcl/Tk, VC-Redist, Font, Audio</td></tr>
+      </tbody>
+    </table>
+    <p class="dim" style="margin-top:0.6rem">Gesamtgröße: <strong>~83 MB</strong> (portable EXE). torch, tensorflow, transformers und andere ML-Schwergewichte sind explizit ausgeschlossen — sonst wäre die EXE &gt;500 MB.</p>
+  </div>
+</section>
+
+<!-- ====== 6. MODUL-ÜBERSICHT ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">06</span> Code-Struktur</h2>
+    <table class="mode-table">
+      <thead><tr><th>Modul</th><th>Rolle</th></tr></thead>
+      <tbody>
+        <tr><td><code>blitztext.pyw</code></td><td>Konsolenloser Einstiegspunkt (pythonw), stdout→blitztext.log</td></tr>
+        <tr><td><code>main.py</code></td><td>Orchestrator: Config, Recorder, Hotkeys, Tray, Pipeline</td></tr>
+        <tr><td><code>config.py</code></td><td>JSON-Konfiguration + .env Secrets, Deep-Merge mit Defaults</td></tr>
+        <tr><td><code>hotkeys.py</code></td><td>pynput-Listener mit 50ms Debounce für Multi-Key-Combos</td></tr>
+        <tr><td><code>recorder.py</code></td><td>sounddevice InputStream → numpy Frames → WAV BytesIO</td></tr>
+        <tr><td><code>transcriber.py</code></td><td>Provider-Routing: OpenAI / Groq / faster-whisper</td></tr>
+        <tr><td><code>processor.py</code></td><td>GPT-Nachbearbeitung (plus/rage/emoji) + Snippet-Ersetzung</td></tr>
+        <tr><td><code>injector.py</code></td><td>Clipboard-Swap + Ctrl+V, stellt Original wieder her</td></tr>
+        <tr><td><code>tray.py</code></td><td>System-Tray-Icon mit dynamischer Pillow-Grafik (B)</td></tr>
+        <tr><td><code>toast.py</code></td><td>Overlay-Benachrichtigung (2.8s, unten rechts)</td></tr>
+        <tr><td><code>overlay.py</code></td><td>Top-Center-Overlay: Aufnahme/Verarbeitung mit Puls-Animation</td></tr>
+        <tr><td><code>log.py</code></td><td>Thread-sicherer Ring-Buffer (max 100 Events) für Feedback-Tab</td></tr>
+        <tr><td><code>settings_ui.py</code></td><td>6-Tab Einstellungsfenster (1038 Zeilen), tkinter + sv-ttk</td></tr>
+        <tr><td><code>build.py</code></td><td>PyInstaller-Build-Orchestrierung</td></tr>
+        <tr><td><code>blitztext.spec</code></td><td>PyInstaller-Spec: --onedir, UPX, exkludiert ML-Schwergewichte</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ====== 7. SCHNIPPETS & ERWEITERBARKEIT ====== -->
+<section>
+  <div class="container">
+    <h2><span class="num">07</span> Snippets, Eigennamen &amp; Erweiterungen</h2>
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="icon">📝</div>
+        <h4>Snippet-System</h4>
+        <p>Gesprochene Keywords werden <em>nach</em> der Transkription automatisch durch konfigurierten Text ersetzt. „freundliche grüße" → „Mit freundlichen Grüßen". Case-insensitive, per <code>re.sub</code>.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🏷️</div>
+        <h4>Eigennamen</h4>
+        <p>Eine Liste von Namen/Marken wird als Whisper-Prompt übergeben und verbessert die Erkennungsgenauigkeit für schwer erkennbare Eigennamen.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon">🔮</div>
+        <h4>Geplante Erweiterungen</h4>
+        <p>Fünfter Modus (Zusammenfassen, Übersetzen, Code-Kommentar), mehrere Profile mit unterschiedlichen API-Keys, Hotkey-Konflikt-Erkennung, noch bessere faster-whisper-Modelle.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== FOOTER ====== -->
+<footer>
+  <p><strong>Blitztext4Win</strong> · Python Edition · Interne Projektdokumentation · Nicht zur Veröffentlichung bestimmt</p>
+  <p style="margin-top:0.3rem">Plattform: Windows 10/11 · Sprache: Python 3.14 · Build: PyInstaller --onedir</p>
+</footer>
+
+</body>
+</html>

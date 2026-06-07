@@ -83,8 +83,14 @@ class TrayIcon:
         )
 
     # ── public API ────────────────────────────────────────────────────
-    def run(self):
-        """Block the calling thread running the tray message loop (must be main thread)."""
+    def run(self, on_ready=None):
+        """Block the calling thread running the tray message loop (must be main thread).
+
+        on_ready: optional callable() invoked ~1s after the icon appears.
+        """
+        if on_ready is not None:
+            import threading
+            threading.Timer(1.0, on_ready).start()
         self._icon.run()
 
     def set_status(self, status: str, mode: str | None = None):

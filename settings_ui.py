@@ -9,7 +9,6 @@ import platform
 import queue
 import sys
 import threading
-import time
 from pathlib import Path
 from typing import Callable
 
@@ -70,7 +69,9 @@ class SettingsWindow(tk.Tk):
 
         self._accent   = _DARK_ACCENT  if self._dark else _LIGHT_ACCENT
         self._card_bg  = _CARD_DARK    if self._dark else _CARD_LIGHT
+        self._input_bg = "#1A1A1A"     if self._dark else "#FFFFFF"
         self._muted_fg = _MUTED
+        self._text_fg  = "#FFFFFF"      if self._dark else "#000000"
 
         self._apply_styles()
 
@@ -105,10 +106,27 @@ class SettingsWindow(tk.Tk):
         s.configure("Red.TLabel",    foreground=_RED,   font=_FONT_BOLD)
         s.configure("Accent.TLabel", foreground=self._accent, font=_FONT_BOLD)
 
+        # Card-embedded widgets — match card background
+        fg = self._text_fg
+        bg = self._card_bg
+        s.configure("Card.TRadiobutton", background=bg, foreground=fg, font=_FONT)
+        s.configure("Card.TCheckbutton", background=bg, foreground=fg, font=_FONT)
+        s.configure("Card.TFrame",       background=bg)
+        s.map("Card.TRadiobutton",
+              background=[("active", bg), ("focus", bg), ("disabled", bg)])
+        s.map("Card.TCheckbutton",
+              background=[("active", bg), ("focus", bg), ("disabled", bg)])
+
         # Notebook tabs: kompaktes Padding damit alle 6 Tabs passen
         s.configure("TNotebook.Tab",
                      font=("Segoe UI Variable Text", 9),
                      padding=[8, 2])
+
+        # Entry fields: always use input_bg (white in light mode)
+        s.configure("TEntry",
+                     fieldbackground=self._input_bg,
+                     foreground=self._text_fg,
+                     insertcolor=self._text_fg)
 
     # ── show / hide ────────────────────────────────────────────────────
     def show(self, config: Config, on_save: Callable, on_close: Callable):
@@ -168,10 +186,10 @@ class SettingsWindow(tk.Tk):
 
         # API Key card
         with _card(frm, self._card_bg) as card:
-            _header(card, "API Key")
-            ttk.Label(card, text="OpenAI (sk-…) oder Groq (gsk_…)",
-                      style="Muted.TLabel").pack(anchor="w", pady=(0, 6))
-            key_row = ttk.Frame(card)
+            _header(card, "API Key", self._card_bg, self._accent)
+            tk.Label(card, text="OpenAI (sk-…) oder Groq (gsk_…)",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(anchor="w", pady=(0, 6))
+            key_row = tk.Frame(card, bg=self._card_bg)
             key_row.pack(fill="x")
             self._api_key_var = tk.StringVar()
             self._api_key_entry = ttk.Entry(
@@ -182,9 +200,9 @@ class SettingsWindow(tk.Tk):
 
         # Sprache card
         with _card(frm, self._card_bg) as card:
-            _header(card, "Whisper-Sprache")
-            ttk.Label(card, text="Sprachcode für Transkription — 'auto' erkennt automatisch.",
-                      style="Muted.TLabel").pack(anchor="w", pady=(0, 6))
+            _header(card, "Whisper-Sprache", self._card_bg, self._accent)
+            tk.Label(card, text="Sprachcode für Transkription — 'auto' erkennt automatisch.",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(anchor="w", pady=(0, 6))
             self._lang_var = tk.StringVar()
             ttk.Combobox(card, textvariable=self._lang_var,
                          values=_LANGUAGES, width=14, state="readonly",
@@ -192,31 +210,44 @@ class SettingsWindow(tk.Tk):
 
         # Aufnahme card
         with _card(frm, self._card_bg) as card:
-            _header(card, "Aufnahme-Modus")
+            _header(card, "Aufnahme-Modus", self._card_bg, self._accent)
             self._record_mode_var = tk.StringVar(value="hold")
-            ttk.Radiobutton(card, text="Halten  —  Taste gedrückt halten",
-                            variable=self._record_mode_var, value="hold").pack(anchor="w")
-            ttk.Radiobutton(card, text="Umschalten  —  1× drücken = start, 1× = stop",
-                            variable=self._record_mode_var, value="toggle").pack(anchor="w", pady=(4, 0))
+            tk.Radiobutton(card, text="Halten  —  Taste gedrückt halten",
+                           variable=self._record_mode_var, value="hold",
+                           bg=self._card_bg, fg=self._text_fg, font=_FONT,
+                           activebackground=self._card_bg, activeforeground=self._text_fg,
+                           selectcolor=self._card_bg).pack(anchor="w")
+            tk.Radiobutton(card, text="Umschalten  —  1× drücken = start, 1× = stop",
+                           variable=self._record_mode_var, value="toggle",
+                           bg=self._card_bg, fg=self._text_fg, font=_FONT,
+                           activebackground=self._card_bg, activeforeground=self._text_fg,
+                           selectcolor=self._card_bg).pack(anchor="w", pady=(4, 0))
 
         # Transkription card
         with _card(frm, self._card_bg) as card:
-            _header(card, "Transkriptions-Modus")
+            _header(card, "Transkriptions-Modus", self._card_bg, self._accent)
             self._transcription_mode_var = tk.StringVar(value="online")
             self._transcription_mode_var.trace_add("write", self._on_transcription_mode_change)
-            ttk.Radiobutton(card,
-                            text="🌐  Online  —  OpenAI / Groq API",
-                            variable=self._transcription_mode_var,
-                            value="online").pack(anchor="w")
-            ttk.Radiobutton(card,
-                            text="💻  Lokal   —  Whisper Small (~463 MB), kein API-Key nötig",
-                            variable=self._transcription_mode_var,
-                            value="local").pack(anchor="w", pady=(4, 8))
+            tk.Radiobutton(card,
+                           text="🌐  Online  —  OpenAI / Groq API",
+                           variable=self._transcription_mode_var,
+                           value="online",
+                           bg=self._card_bg, fg=self._text_fg, font=_FONT,
+                           activebackground=self._card_bg, activeforeground=self._text_fg,
+                           selectcolor=self._card_bg).pack(anchor="w")
+            tk.Radiobutton(card,
+                           text="💻  Lokal   —  Whisper Small (~463 MB), kein API-Key nötig",
+                           variable=self._transcription_mode_var,
+                           value="local",
+                           bg=self._card_bg, fg=self._text_fg, font=_FONT,
+                           activebackground=self._card_bg, activeforeground=self._text_fg,
+                           selectcolor=self._card_bg).pack(anchor="w", pady=(4, 8))
 
-            path_row = ttk.Frame(card)
+            path_row = tk.Frame(card, bg=self._card_bg)
             path_row.pack(fill="x")
-            ttk.Label(path_row, text="Modelldatei",
-                      style="Muted.TLabel", width=11, anchor="w").pack(side="left")
+            tk.Label(path_row, text="Modelldatei",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL,
+                     width=11, anchor="w").pack(side="left")
             ttk.Button(path_row, text="…", width=3,
                        command=self._browse_model_file).pack(side="right")
             self._model_path_var = tk.StringVar()
@@ -224,16 +255,20 @@ class SettingsWindow(tk.Tk):
             ttk.Entry(path_row, textvariable=self._model_path_var,
                       font=_FONT_MONO).pack(side="left", fill="x", expand=True, padx=(8, 6))
 
-            self._model_status_lbl = ttk.Label(card, text="—", style="Muted.TLabel")
+            self._model_status_lbl = tk.Label(card, text="—",
+                                              bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL)
             self._model_status_lbl.pack(anchor="w", pady=(6, 0))
             self._model_load_gen = 0  # invalidiert veraltete Timer/Threads bei neuem Load
 
         # Autostart card
         with _card(frm, self._card_bg) as card:
-            _header(card, "Autostart")
+            _header(card, "Autostart", self._card_bg, self._accent)
             self._autostart_var = tk.BooleanVar()
-            ttk.Checkbutton(card, text="Blitztext beim Windows-Start automatisch öffnen",
-                            variable=self._autostart_var).pack(anchor="w")
+            tk.Checkbutton(card, text="Blitztext beim Windows-Start automatisch öffnen",
+                           variable=self._autostart_var,
+                           bg=self._card_bg, fg=self._text_fg, font=_FONT,
+                           activebackground=self._card_bg, activeforeground=self._text_fg,
+                           selectcolor=self._card_bg).pack(anchor="w")
 
     def _toggle_key_visibility(self):
         self._api_key_entry.configure(
@@ -242,9 +277,13 @@ class SettingsWindow(tk.Tk):
 
     def _on_transcription_mode_change(self, *_):
         if self._transcription_mode_var.get() == "local":
-            self._load_local_model_async()
+            # Nur laden wenn explizit ein Pfad gesetzt — sonst nur Status prüfen
+            if self._model_path_var.get().strip():
+                self._load_local_model_async()
+            else:
+                self._update_model_status()
         else:
-            self._model_status_lbl.configure(text="—", style="Muted.TLabel")
+            self._model_status_lbl.configure(text="—", fg=self._muted_fg, font=_FONT_SMALL)
 
     def _browse_model_file(self):
         from tkinter import filedialog
@@ -263,37 +302,34 @@ class SettingsWindow(tk.Tk):
     def _load_local_model_async(self):
         model_path = self._model_path_var.get().strip() or None
         if is_local_model_loaded():
-            self._model_status_lbl.configure(text="✓ Modell bereit", style="Green.TLabel")
+            self._model_status_lbl.configure(text="✓ Modell bereit", fg=_GREEN, font=_FONT_BOLD)
             return
 
         self._model_load_gen += 1
         gen = self._model_load_gen
 
-        self._model_status_lbl.configure(text="⏳ wird geladen…  (0s)", style="Accent.TLabel")
-        _start = time.monotonic()
+        self._model_status_lbl.configure(text="⏳ wird geladen…", fg=self._accent, font=_FONT_BOLD)
 
-        def _tick():
-            if self._model_load_gen != gen:  # neuerer Load gestartet → abbrechen
+        def _on_progress(downloaded: int, total: int):
+            if self._model_load_gen != gen:
                 return
-            if not self._model_status_lbl.cget("text").startswith("⏳"):
-                return
-            elapsed = int(time.monotonic() - _start)
-            self._model_status_lbl.configure(text=f"⏳ wird geladen…  ({elapsed}s)")
-            self.after(1000, _tick)
-
-        self.after(1000, _tick)
+            dl_mb = downloaded / 1_048_576
+            tot_mb = total / 1_048_576
+            pct = int(downloaded / total * 100) if total else 0
+            text = f"⏳ {dl_mb:.0f} MB / {tot_mb:.0f} MB  ({pct}%)"
+            self.after(0, lambda t=text: self._model_status_lbl.configure(text=t))
 
         def _do():
             try:
-                load_local_model(model_path)
+                load_local_model(model_path, on_progress=_on_progress)
                 if self._model_load_gen == gen:
                     self.after(0, lambda: self._model_status_lbl.configure(
-                        text="✓ Modell bereit", style="Green.TLabel"))
+                        text="✓ Modell bereit", fg=_GREEN, font=_FONT_BOLD))
             except Exception as e:
                 msg = str(e)
                 if self._model_load_gen == gen:
                     self.after(0, lambda m=msg: self._model_status_lbl.configure(
-                        text=f"✕ Fehler: {m}", style="Red.TLabel"))
+                        text=f"✕ Fehler: {m}", fg=_RED, font=_FONT_BOLD))
 
         threading.Thread(target=_do, daemon=True, name="model-load").start()
 
@@ -303,7 +339,7 @@ class SettingsWindow(tk.Tk):
         if current.startswith("⏳") or current == "✓ Modell bereit" or current.startswith("✕ Fehler:"):
             return
         if is_local_model_loaded():
-            self._model_status_lbl.configure(text="✓ Modell bereit", style="Green.TLabel")
+            self._model_status_lbl.configure(text="✓ Modell bereit", fg=_GREEN, font=_FONT_BOLD)
             return
         if self._transcription_mode_var.get() != "local":
             return
@@ -314,48 +350,51 @@ class SettingsWindow(tk.Tk):
             on_disk = is_model_on_disk(model_path)
             if on_disk:
                 self.after(0, lambda: self._model_status_lbl.configure(
-                    text="○ Vorhanden, nicht geladen", style="Muted.TLabel"))
+                    text="○ Vorhanden, nicht geladen", fg=self._muted_fg, font=_FONT_SMALL))
             else:
                 self.after(0, lambda: self._model_status_lbl.configure(
                     text="✕ Fehlt  (~463 MB, wird beim ersten Start heruntergeladen)",
-                    style="Red.TLabel"))
+                    fg=_RED, font=_FONT_BOLD))
 
         threading.Thread(target=_check, daemon=True, name="model-status-check").start()
 
     # ── Hotkeys ────────────────────────────────────────────────────────
     def _build_hotkeys(self, parent):
         frm = _plain(parent)
-
-        ttk.Label(frm,
-                  text="Drücke 'Aufnehmen' und halte dann die Tastenkombination.\n"
-                       "Tipp: Rechte Sondertasten (Right Ctrl, Right Alt, Right Shift) "
-                       "kollidieren selten mit anderen Apps.",
-                  style="Muted.TLabel", wraplength=550, justify="left",
-                  ).pack(anchor="w", padx=4, pady=(4, 12))
-
         self._hotkey_vars: dict[str, tk.StringVar] = {}
-        icons = {"normal": "🎙", "plus": "✏️", "rage": "😤", "emoji": "😊"}
+        icons = {"normal": "🎙", "plus": "📝", "rage": "😤", "emoji": "😊"}
 
-        for mode in _MODES:
-            with _card(frm, self._card_bg) as card:
-                row = ttk.Frame(card)
-                row.pack(fill="x")
-                ttk.Label(row,
-                          text=f"{icons[mode]}  {_MODE_LABELS[mode]}",
-                          font=_FONT_BOLD).pack(side="left")
+        with _card(frm, self._card_bg) as card:
+            _header(card, "Hotkeys", self._card_bg, self._accent)
+            tk.Label(
+                card,
+                text="Drücke 'Aufnehmen' und halte dann die Tastenkombination.\n"
+                     "Tipp: Rechte Sondertasten (Right Ctrl, Right Alt, Right Shift) "
+                     "kollidieren selten mit anderen Apps.",
+                bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL,
+                wraplength=540, justify="left",
+            ).pack(anchor="w", pady=(0, 10))
 
+            for mode in _MODES:
                 var = tk.StringVar()
                 self._hotkey_vars[mode] = var
 
-                ttk.Button(row, text="Löschen", width=7,
-                           command=lambda m=mode: self._hotkey_vars[m].set("")
-                           ).pack(side="right")
-                ttk.Button(row, text="Aufnehmen", width=10,
-                           command=lambda m=mode: self._capture_hotkey(m)
-                           ).pack(side="right", padx=(0, 6))
+                row = tk.Frame(card, bg=self._card_bg)
+                row.pack(fill="x", pady=3)
+
+                tk.Label(row,
+                         text=f"{icons[mode]}  {_MODE_LABELS[mode]}",
+                         font=_FONT_BOLD, bg=self._card_bg, fg=self._text_fg,
+                         width=16, anchor="w").pack(side="left")
                 ttk.Entry(row, textvariable=var, width=22,
                           state="readonly", font=_FONT_MONO
-                          ).pack(side="right", padx=(0, 10))
+                          ).pack(side="left", padx=(0, 6))
+                ttk.Button(row, text="Aufnehmen", width=10,
+                           command=lambda m=mode: self._capture_hotkey(m)
+                           ).pack(side="left")
+                ttk.Button(row, text="Löschen", width=7,
+                           command=lambda m=mode: self._hotkey_vars[m].set("")
+                           ).pack(side="left", padx=(6, 0))
 
     def _capture_hotkey(self, mode: str):
         dialog = tk.Toplevel(self)
@@ -403,33 +442,38 @@ class SettingsWindow(tk.Tk):
         boxes = {}
         for key in ("plus", "rage", "emoji"):
             with _card(frm, self._card_bg) as card:
-                _header(card, f"{_MODE_LABELS[key]}-Modus")
-                ttk.Label(card, text=descs[key],
-                          style="Muted.TLabel").pack(anchor="w", pady=(0, 6))
-                boxes[key] = _textbox(card, height=3, font=_FONT)
+                _header(card, f"{_MODE_LABELS[key]}-Modus", self._card_bg, self._accent)
+                tk.Label(card, text=descs[key],
+                         bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(anchor="w", pady=(0, 6))
+                boxes[key] = _textbox(card, height=3, font=_FONT,
+                                      bg=self._card_bg, fg=self._text_fg)
 
         self._plus_prompt  = boxes["plus"]
         self._rage_prompt  = boxes["rage"]
         self._emoji_prompt = boxes["emoji"]
 
         with _card(frm, self._card_bg) as card:
-            _header(card, "Emoji-Dichte")
-            ttk.Label(card,
-                      text="Wie viele Emojis sollen eingefügt werden?",
-                      style="Muted.TLabel").pack(anchor="w", pady=(0, 8))
-            slider_row = ttk.Frame(card)
+            _header(card, "Emoji-Dichte", self._card_bg, self._accent)
+            tk.Label(card,
+                     text="Wie viele Emojis sollen eingefügt werden?",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(anchor="w", pady=(0, 8))
+            slider_row = tk.Frame(card, bg=self._card_bg)
             slider_row.pack(fill="x")
-            ttk.Label(slider_row, text="Wenige", style="Muted.TLabel").pack(side="left")
+            tk.Label(slider_row, text="Wenige", bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(side="left")
             self._emoji_density_var = tk.IntVar(value=5)
-            self._density_lbl = ttk.Label(slider_row, text="5",
-                                          style="Accent.TLabel", width=3)
+            self._density_lbl = tk.Label(slider_row, text="5",
+                                         bg=self._card_bg, fg=self._accent, font=_FONT_BOLD, width=3)
             self._density_lbl.pack(side="right")
-            ttk.Label(slider_row, text="Viele",
-                      style="Muted.TLabel").pack(side="right", padx=(0, 8))
-            ttk.Scale(slider_row, from_=1, to=10, orient="horizontal",
-                      variable=self._emoji_density_var,
-                      command=lambda v: self._density_lbl.configure(
-                          text=str(int(float(v))))).pack(
+            tk.Label(slider_row, text="Viele",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL).pack(side="right", padx=(0, 8))
+            tk.Scale(slider_row, from_=1, to=10, orient="horizontal",
+                     variable=self._emoji_density_var,
+                     bg=self._card_bg, fg=self._text_fg,
+                     highlightthickness=0, troughcolor=self._muted_fg,
+                     activebackground=self._accent, sliderrelief="flat",
+                     width=12, sliderlength=28, showvalue=0,
+                     command=lambda v: self._density_lbl.configure(
+                         text=str(int(float(v))))).pack(
                 side="left", fill="x", expand=True, padx=8)
 
     # ── Snippets ───────────────────────────────────────────────────────
@@ -437,22 +481,23 @@ class SettingsWindow(tk.Tk):
         outer = _scrollable(parent)
 
         with _card(outer, self._card_bg) as card:
-            _header(card, "Snippets")
-            ttk.Label(
+            _header(card, "Snippets", self._card_bg, self._accent)
+            tk.Label(
                 card,
                 text="Sprich ein Keyword — es wird automatisch durch den definierten Text ersetzt.\n"
                      "Groß-/Kleinschreibung wird ignoriert.",
-                style="Muted.TLabel", wraplength=540, justify="left",
+                bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL,
+                wraplength=540, justify="left",
             ).pack(anchor="w", pady=(0, 10))
 
             # Header-Zeile
-            hdr = ttk.Frame(card)
+            hdr = tk.Frame(card, bg=self._card_bg)
             hdr.pack(fill="x", pady=(0, 4))
-            ttk.Label(hdr, text="Keyword",    font=_FONT_BOLD, width=20, anchor="w").pack(side="left")
-            ttk.Label(hdr, text="Ersatztext", font=_FONT_BOLD, anchor="w").pack(side="left", padx=(8, 0))
+            tk.Label(hdr, text="Keyword",    font=_FONT_BOLD, bg=self._card_bg, fg=self._text_fg, width=20, anchor="w").pack(side="left")
+            tk.Label(hdr, text="Ersatztext", font=_FONT_BOLD, bg=self._card_bg, fg=self._text_fg, anchor="w").pack(side="left", padx=(8, 0))
 
             # Container für die Snippet-Zeilen
-            self._snippets_frame = ttk.Frame(card)
+            self._snippets_frame = tk.Frame(card, bg=self._card_bg)
             self._snippets_frame.pack(fill="x")
             self._snippet_rows: list[tuple[tk.StringVar, tk.StringVar]] = []
 
@@ -466,7 +511,7 @@ class SettingsWindow(tk.Tk):
         txt_var = tk.StringVar(master=self, value=text)
         self._snippet_rows.append((kw_var, txt_var))
 
-        frm = ttk.Frame(self._snippets_frame)
+        frm = tk.Frame(self._snippets_frame, bg=self._card_bg)
         frm.pack(fill="x", pady=3)
 
         ttk.Entry(frm, textvariable=kw_var,  width=20, font=_FONT).pack(side="left")
@@ -482,69 +527,182 @@ class SettingsWindow(tk.Tk):
 
     # ── Eigennamen ─────────────────────────────────────────────────────
     def _build_nouns(self, parent):
-        frm = _plain(parent)
-        with _card(frm, self._card_bg, expand=True) as card:
-            _header(card, "Eigennamen")
-            ttk.Label(card,
-                      text="Helfen Whisper, Markennamen, Personen und Fachbegriffe "
-                           "korrekt zu erkennen. Ein Begriff pro Zeile.",
-                      style="Muted.TLabel", wraplength=540, justify="left",
-                      ).pack(anchor="w", pady=(0, 8))
-            self._nouns_box = _textbox(card, height=6, expand=True)
+        outer = _scrollable(parent)
+        _sep = "#333333" if self._dark else "#DDDDDD"
+        with _card(outer, self._card_bg) as card:
+            _header(card, "Eigennamen", self._card_bg, self._accent)
+            tk.Label(card,
+                     text="Helfen Whisper, Markennamen, Personen und Fachbegriffe "
+                          "korrekt zu erkennen.",
+                     bg=self._card_bg, fg=self._muted_fg, font=_FONT_SMALL,
+                     wraplength=540, justify="left",
+                     ).pack(anchor="w", pady=(0, 6))
+
+            # ── List area ──────────────────────────────────────────
+            list_border = tk.Frame(card, bg=_sep)
+            list_border.pack(fill="x", pady=(0, 8))
+            list_inner = tk.Frame(list_border, bg=self._input_bg)
+            list_inner.pack(fill="both", expand=True, padx=1, pady=1)
+            self._nouns_list_frame = list_inner
+
+            # ── Buttons ────────────────────────────────────────────
+            btn_row = tk.Frame(card, bg=self._card_bg)
+            btn_row.pack(fill="x")
+            ttk.Button(btn_row, text="+ Hinzufügen",
+                       command=self._add_noun_entry).pack(side="left")
+            self._noun_del_btn = ttk.Button(
+                btn_row, text="✕ Löschen",
+                command=self._delete_selected_nouns, state="disabled")
+            self._noun_del_btn.pack(side="left", padx=(6, 0))
+
+            # ── Internal state ─────────────────────────────────────
+            self._noun_items:    list[str]      = []
+            self._noun_selected: set[int]       = set()
+            self._noun_frames:   list[tk.Frame] = []
+            self._noun_adding    = False
+
+    def _rebuild_noun_list(self):
+        for f in self._noun_frames:
+            try:
+                f.destroy()
+            except Exception:
+                pass
+        self._noun_frames.clear()
+        self._noun_selected.clear()
+        self._noun_adding = False
+        self._noun_del_btn.configure(state="disabled", text="✕ Löschen")
+        for i, noun in enumerate(self._noun_items):
+            self._append_noun_label(i, noun)
+
+    def _append_noun_label(self, index: int, noun: str):
+        sel_bg  = self._accent
+        sel_fg  = "#000000" if self._dark else "#FFFFFF"
+        norm_bg = self._input_bg
+        norm_fg = self._text_fg
+
+        row = tk.Frame(self._nouns_list_frame, bg=norm_bg, cursor="hand2")
+        row.pack(fill="x", pady=(0, 1))
+        lbl = tk.Label(row, text=noun, font=_FONT_MONO,
+                       bg=norm_bg, fg=norm_fg, anchor="w", padx=10, pady=5)
+        lbl.pack(fill="x")
+        self._noun_frames.append(row)
+
+        def _toggle(event, i=index, r=row, l=lbl):
+            if i in self._noun_selected:
+                self._noun_selected.discard(i)
+                r.configure(bg=norm_bg)
+                l.configure(bg=norm_bg, fg=norm_fg)
+            else:
+                self._noun_selected.add(i)
+                r.configure(bg=sel_bg)
+                l.configure(bg=sel_bg, fg=sel_fg)
+            count = len(self._noun_selected)
+            self._noun_del_btn.configure(
+                state="normal" if count else "disabled",
+                text=f"✕ Löschen ({count})" if count else "✕ Löschen",
+            )
+
+        row.bind("<Button-1>", _toggle)
+        lbl.bind("<Button-1>", _toggle)
+
+    def _delete_selected_nouns(self):
+        self._noun_items = [
+            n for i, n in enumerate(self._noun_items)
+            if i not in self._noun_selected
+        ]
+        self._rebuild_noun_list()
+
+    def _add_noun_entry(self):
+        if self._noun_adding:
+            return
+        self._noun_adding = True
+        row = tk.Frame(self._nouns_list_frame, bg=self._input_bg)
+        row.pack(fill="x", pady=(0, 1))
+        self._noun_frames.append(row)
+
+        var = tk.StringVar()
+        entry = ttk.Entry(row, textvariable=var, font=_FONT_MONO)
+        entry.pack(fill="x", padx=4, pady=3)
+        entry.focus_set()
+
+        committed = [False]
+
+        def _commit(event=None):
+            if committed[0]:
+                return
+            committed[0] = True
+            text = var.get().strip()
+
+            def _do():
+                try:
+                    row.destroy()
+                except Exception:
+                    pass
+                if text:
+                    self._noun_items.append(text)
+                self._rebuild_noun_list()
+
+            self.after(1, _do)
+
+        entry.bind("<Return>", _commit)
+        entry.bind("<FocusOut>", _commit)
 
     # ── Feedback ───────────────────────────────────────────────────────
     def _build_feedback(self, parent):
-        frm = _plain(parent)
+        frm = _scrollable(parent)
+        bg = self._input_bg
 
         # API Status card
-        with _card(frm, self._card_bg) as card:
-            _header(card, "API-Status")
-            grid = ttk.Frame(card)
+        with _card(frm, bg) as card:
+            _header(card, "API-Status", bg, self._accent)
+            grid = tk.Frame(card, bg=bg)
             grid.pack(fill="x")
-            _row_label(grid, "Anbieter", 0)
-            self._fb_provider = ttk.Label(grid, text="—", font=_FONT_BOLD)
+            _row_label(grid, "Anbieter", 0, bg=bg, fg=self._muted_fg)
+            self._fb_provider = tk.Label(grid, text="—", font=_FONT_BOLD, bg=bg, fg=self._text_fg)
             self._fb_provider.grid(row=0, column=1, sticky="w", padx=10, pady=3)
 
-            _row_label(grid, "API-Key", 1)
-            self._fb_key_status = ttk.Label(grid, text="—")
+            _row_label(grid, "API-Key", 1, bg=bg, fg=self._muted_fg)
+            self._fb_key_status = tk.Label(grid, text="—", bg=bg, fg=self._text_fg, font=_FONT)
             self._fb_key_status.grid(row=1, column=1, sticky="w", padx=10, pady=3)
 
-            _row_label(grid, "Hotkeys", 2)
-            self._fb_hotkeys_lbl = ttk.Label(grid, text="—",
-                                              font=_FONT_MONO, wraplength=380)
+            _row_label(grid, "Hotkeys", 2, bg=bg, fg=self._muted_fg)
+            self._fb_hotkeys_lbl = tk.Label(grid, text="—",
+                                             font=_FONT_MONO, bg=bg, fg=self._text_fg, wraplength=380)
             self._fb_hotkeys_lbl.grid(row=2, column=1, sticky="w", padx=10, pady=3)
 
         # Letztes Ergebnis card
-        with _card(frm, self._card_bg) as card:
-            _header(card, "Letztes Ergebnis")
-            res = ttk.Frame(card)
+        with _card(frm, bg) as card:
+            _header(card, "Letztes Ergebnis", bg, self._accent)
+            res = tk.Frame(card, bg=bg)
             res.pack(fill="x")
             for i, (label, attr) in enumerate([
                 ("Transkript", "_fb_transcript"),
                 ("Ausgabe",    "_fb_output"),
                 ("Fehler",     "_fb_error"),
             ]):
-                _row_label(res, label, i)
-                lbl = ttk.Label(res, text="—", wraplength=380, justify="left")
+                _row_label(res, label, i, bg=bg, fg=self._muted_fg)
+                lbl = tk.Label(res, text="—", wraplength=380, justify="left",
+                               bg=bg, fg=self._text_fg, font=_FONT)
                 lbl.grid(row=i, column=1, sticky="w", padx=10, pady=3)
                 setattr(self, attr, lbl)
 
         # Umgebung card
-        with _card(frm, self._card_bg) as card:
-            _header(card, "Umgebung")
-            env = ttk.Frame(card)
+        with _card(frm, bg) as card:
+            _header(card, "Umgebung", bg, self._accent)
+            env = tk.Frame(card, bg=bg)
             env.pack(fill="x")
             for i, (k, v) in enumerate(self._collect_env()):
-                ttk.Label(env, text=k, style="Muted.TLabel",
-                          width=14, anchor="w").grid(row=i, column=0, sticky="w", padx=0, pady=2)
-                ttk.Label(env, text=v, font=_FONT_MONO).grid(
+                tk.Label(env, text=k, bg=bg, fg=self._muted_fg, font=_FONT_SMALL,
+                         width=14, anchor="w").grid(row=i, column=0, sticky="w", padx=0, pady=2)
+                tk.Label(env, text=v, font=_FONT_MONO, bg=bg, fg=self._text_fg).grid(
                     row=i, column=1, sticky="w", padx=10, pady=2)
 
         # Log card
-        with _card(frm, self._card_bg) as card:
-            _header(card, "Ereignis-Log")
-            self._fb_log = _textbox(card, height=6, font=_FONT_MONO, state="disabled")
-            btn_row = ttk.Frame(card)
+        with _card(frm, bg) as card:
+            _header(card, "Ereignis-Log", bg, self._accent)
+            self._fb_log = _textbox(card, height=6, font=_FONT_MONO, state="disabled",
+                                   bg=bg, fg=self._text_fg)
+            btn_row = tk.Frame(card, bg=bg)
             btn_row.pack(fill="x", pady=(4, 0))
             ttk.Button(btn_row, text="Aktualisieren",
                        command=self._refresh_feedback).pack(side="left")
@@ -642,8 +800,8 @@ class SettingsWindow(tk.Tk):
         self._emoji_density_var.set(cfg.emoji_density)
         self._density_lbl.configure(text=str(cfg.emoji_density))
 
-        self._nouns_box.delete("1.0", "end")
-        self._nouns_box.insert("1.0", "\n".join(cfg.proper_nouns))
+        self._noun_items = list(cfg.proper_nouns)
+        self._rebuild_noun_list()
 
         # Snippets neu aufbauen
         for w in self._snippets_frame.winfo_children():
@@ -670,8 +828,7 @@ class SettingsWindow(tk.Tk):
         cfg.set_prompt("emoji", self._emoji_prompt.get("1.0", "end").strip())
         cfg.emoji_density = self._emoji_density_var.get()
 
-        raw = self._nouns_box.get("1.0", "end").strip()
-        cfg.proper_nouns = [n.strip() for n in raw.splitlines() if n.strip()]
+        cfg.proper_nouns = [n for n in self._noun_items if n.strip()]
 
         cfg.snippets = [
             {"keyword": kw.get().strip(), "text": tx.get().strip()}
@@ -754,6 +911,8 @@ def _scrollable(parent: ttk.Frame) -> ttk.Frame:
     """Canvas + Scrollbar; returns inner frame. Scrollbar only visible when needed."""
     outer = ttk.Frame(parent)
     outer.pack(fill="both", expand=True)
+    outer.columnconfigure(0, weight=1)
+    outer.rowconfigure(0, weight=1)
 
     vsb    = ttk.Scrollbar(outer, orient="vertical")
     canvas = tk.Canvas(outer, borderwidth=0, highlightthickness=0,
@@ -772,9 +931,9 @@ def _scrollable(parent: ttk.Frame) -> ttk.Frame:
         canvas.configure(scrollregion=canvas.bbox("all"))
         # Show/hide scrollbar based on whether content overflows
         if inner.winfo_reqheight() > canvas.winfo_height():
-            vsb.pack(side="right", fill="y")
+            vsb.grid(row=0, column=1, sticky="ns")
         else:
-            vsb.pack_forget()
+            vsb.grid_remove()
 
     canvas.bind("<Configure>", _on_canvas_resize)
     inner.bind("<Configure>", _on_inner_resize)
@@ -785,7 +944,7 @@ def _scrollable(parent: ttk.Frame) -> ttk.Frame:
     canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _wheel))
     canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
 
-    canvas.pack(fill="both", expand=True, padx=(8, 0), pady=8)
+    canvas.grid(row=0, column=0, sticky="nsew", padx=(8, 0), pady=8)
     return inner
 
 
@@ -796,22 +955,23 @@ def _plain(parent: ttk.Frame) -> ttk.Frame:
     return frm
 
 
-def _header(parent, text: str):
-    ttk.Label(parent, text=text, style="Header.TLabel").pack(
+def _header(parent, text: str, bg: str = _CARD_DARK, fg: str = _DARK_ACCENT):
+    tk.Label(parent, text=text, font=_FONT_HEADER, bg=bg, fg=fg).pack(
         anchor="w", pady=(0, 4))
 
 
-def _row_label(parent, text: str, row: int):
-    ttk.Label(parent, text=text, style="Muted.TLabel",
-              width=13, anchor="w").grid(row=row, column=0, sticky="nw", pady=3)
+def _row_label(parent, text: str, row: int, bg: str = _CARD_DARK, fg: str = _MUTED):
+    tk.Label(parent, text=text, bg=bg, fg=fg, font=_FONT_SMALL,
+             width=13, anchor="w").grid(row=row, column=0, sticky="nw", pady=3)
 
 
 def _textbox(parent, height: int = 5, font=_FONT, state: str = "normal",
-             expand: bool = False) -> tk.Text:
-    frame = ttk.Frame(parent)
+             expand: bool = False, bg: str = _CARD_DARK, fg: str = "#FFFFFF") -> tk.Text:
+    frame = tk.Frame(parent, bg=bg)
     frame.pack(fill="both" if expand else "x", expand=expand, pady=(0, 4))
     text = tk.Text(frame, height=height, font=font, wrap="word",
                    relief="flat", borderwidth=0, state=state,
+                   bg=bg, fg=fg, insertbackground=fg,
                    padx=6, pady=4)
     vsb  = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
 
