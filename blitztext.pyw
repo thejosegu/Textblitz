@@ -23,6 +23,11 @@ if os.path.isdir(_libs) and _libs not in sys.path:
         if os.path.isdir(_pkg_dir):
             os.add_dll_directory(_pkg_dir)
 
+# src/ für Entwicklungsumgebung (Quellcode liegt in src/)
+_src = os.path.join(_base, "src")
+if os.path.isdir(_src) and _src not in sys.path:
+    sys.path.insert(0, _src)
+
 # Logdatei neben der EXE / dem Skript
 _log = open(os.path.join(_base, "blitztext.log"), "a", encoding="utf-8", buffering=1)
 sys.stdout = _log

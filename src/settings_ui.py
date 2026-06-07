@@ -875,7 +875,7 @@ class SettingsWindow(tk.Tk):
             # Dev mode: pythonw + script
             _candidate = Path(sys.executable).parent / "pythonw.exe"
             pythonw = str(_candidate if _candidate.exists() else Path(sys.executable))
-            app = str(Path(__file__).resolve().parent / "blitztext.pyw")
+            app = str(Path(__file__).resolve().parent.parent / "blitztext.pyw")
             app_cmd = f'"{pythonw}" "{app}"'
 
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_path, 0,

@@ -18,7 +18,7 @@ import numpy as np
 def _app_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
-    return Path(__file__).parent
+    return Path(__file__).parent.parent
 
 
 _DEFAULT_MODEL_DIR = str(_app_dir() / "whisper")

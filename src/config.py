@@ -11,7 +11,7 @@ def _app_dir() -> Path:
     """Directory next to the EXE (frozen) or next to this source file (dev)."""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
-    return Path(__file__).parent
+    return Path(__file__).parent.parent
 
 
 load_dotenv(_app_dir() / ".env")

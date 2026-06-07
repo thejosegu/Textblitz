@@ -13,7 +13,7 @@ from pystray import MenuItem as Item
 def _app_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
-    return Path(__file__).parent
+    return Path(__file__).parent.parent
 
 # Status → (background color, label char)
 _STATUS_STYLES: dict[str, tuple[tuple[int, int, int], str]] = {

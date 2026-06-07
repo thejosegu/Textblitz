@@ -7,22 +7,12 @@ config.json
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
 *.pyd
-.Python
-*.egg-info/
 dist/
 build/
 
 # Transkripte (lokal, nicht im Repo)
 transcripts/
-
-# Node
-node_modules/
-package-lock.json
-
-# VS Code
-.vscode/
 
 # Logs
 *.log
@@ -31,11 +21,14 @@ package-lock.json
 Thumbs.db
 desktop.ini
 
-# C# Build-Artefakte
-C-Sharp/bin/
-C-Sharp/obj/
-
 # ML-Modelle (große Binärdateien)
-C-Sharp/*.bin
 whisper/*
 !whisper/README.md
+
+
+
+# Sonstiges
+.backup/
+.claude/
+.kilo/
+docs/

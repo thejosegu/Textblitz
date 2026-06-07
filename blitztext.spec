@@ -15,7 +15,7 @@ BASE = os.path.abspath(os.path.dirname(os.path.normcase(os.sys.argv[-1])))
 # ---------------------------------------------------------------------------
 a = Analysis(
     [os.path.join(BASE, "blitztext.pyw")],
-    pathex=[BASE],
+    pathex=[BASE, os.path.join(BASE, "src")],
     binaries=[],
     datas=[
         # Runtime assets (fonts, icons, default config)
