@@ -71,24 +71,19 @@ def _post_build():
     root = _repo_root()
     dist = root / "dist"
 
-    # When using a single-file EXE spec, dist/ contains Blitztext.exe directly.
-    # When using a single-directory spec, dist/ contains Blitztext/ folder.
     exe_file = dist / "Blitztext.exe"
+    dist_dir = dist / "Blitztext"
+
     if exe_file.exists():
-        print(f"[build] done — portable build is in: {dist}")
-        print(f"[build] EXE: {exe_file}")
-        print("[build] zip that folder and distribute it.")
+        size_mb = exe_file.stat().st_size / 1024 / 1024
+        print(f"[build] done — {size_mb:.1f} MB onefile EXE: {exe_file}")
         return
 
-    # Single-directory fallback
-    dist_dir = dist / "Blitztext"
     if dist_dir.exists():
         config_src = root / "config.json"
         if config_src.exists():
             shutil.copy2(config_src, dist_dir / "config.json")
-            print("[build] copied config.json → dist/Blitztext/")
-        print(f"[build] done — portable build is in: {dist_dir}")
-        print("[build] zip that folder and distribute it.")
+        print(f"[build] done — folder build in: {dist_dir}")
         return
 
     print("[build] WARNING: dist output not found — check build log above")

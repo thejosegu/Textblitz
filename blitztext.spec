@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for Blitztext — builds a portable Windows tray app."""
 
-from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
+from PyInstaller.building.build_main import Analysis, PYZ, EXE
 import sys
 import os
 
 # ---------------------------------------------------------------------------
-# Paths  (spec is executed with globals; __file__ is not available)
+# Paths
 # ---------------------------------------------------------------------------
 BASE = os.path.abspath(os.path.dirname(os.path.normcase(os.sys.argv[-1])))
 
@@ -18,11 +18,9 @@ a = Analysis(
     pathex=[BASE, os.path.join(BASE, "src")],
     binaries=[],
     datas=[
-        # Runtime assets (fonts, icons, default config)
         (os.path.join(BASE, "assets"), "assets"),
     ],
     hiddenimports=[
-        # Core runtime imports
         "openai",
         "groq",
         "pystray",
@@ -33,24 +31,176 @@ a = Analysis(
         "sv_ttk",
         "PIL",
         "dotenv",
-        # faster-whisper pulls in ctranslate2/av/torch at runtime
         "faster_whisper",
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Heavy ML frameworks that faster-whisper may pull in but we don't need
+        # ML frameworks (not needed — faster-whisper uses ctranslate2)
         "torch",
         "torchvision",
         "torchaudio",
         "tensorflow",
         "tensorboard",
         "transformers",
-        "matplotlib",
+        # Data science
         "scipy",
         "pandas",
         "sklearn",
+        "matplotlib",
+        "sympy",
+        "numba",
+        "networkx",
+        "xarray",
+        # NLP toolkits
+        "spacy",
+        "thinc",
+        "blis",
+        "catalogue",
+        "cymem",
+        "murmurhash",
+        "preshed",
+        "srsly",
+        "wasabi",
+        "weasel",
+        "spacy_curated_transformers",
+        "spacy_legacy",
+        "spacy_loggers",
+        "curated_transformers",
+        "curated_tokenizers",
+        "confection",
+        "language_tags",
+        "misaki",
+        # Computer vision
+        "cv2",
+        "ultralytics",
+        "ultralytics_thop",
+        "onnxruntime",
+        "opencv-python",
+        "opencv_python",
+        # Document processing
+        "pymupdf",
+        "pdfminer",
+        "pdfplumber",
+        "openpyxl",
+        "weasyprint",
+        "pydyf",
+        "tinycss2",
+        "cssselect2",
+        "tinyhtml5",
+        "webencodings",
+        "pyphen",
+        "fonttools",
+        "zopfli",
+        # Database
+        "sqlite3",
+        "sqlalchemy",
+        "alembic",
+        "psycopg2",
+        # Web frameworks
+        "flask",
+        "werkzeug",
+        "starlette",
+        "uvicorn",
+        "fastapi",
+        "sse_starlette",
+        "watchfiles",
+        "waitress",
+        "blinker",
+        "itsdangerous",
+        "jinja2",
+        "markupsafe",
+        "click",
+        # RDF / linked data
+        "rdflib",
+        "csvw",
+        "isodate",
+        # Cloud / Google
+        "google",
+        "google_genai",
+        "google_api_core",
+        "google_api_python_client",
+        "google_auth",
+        "google_auth_httplib2",
+        "google_auth_oauthlib",
+        "google_analytics_data",
+        "googleapis_common_protos",
+        "grpcio",
+        "grpcio_status",
+        "proto",
+        "proto_plus",
+        "protobuf",
+        "uritemplate",
+        "pyasn1",
+        "pyasn1_modules",
+        # MCP / LLM tooling
+        "mcp",
+        "fastmcp",
+        "fastmcp_slim",
+        "notebooklm",
+        "notebooklm_mcp_cli",
+        "notebooklm_py",
+        "graphifyy",
+        "py_key_value_aio",
+        "addict",
+        "joserfc",
+        "jsonschema_path",
+        "openapi_pydantic",
+        # TTS / Audio
+        "kokoro",
+        "piper_tts",
+        "espeakng_loader",
+        "phonemizer",
+        "phonemizer_fork",
+        "num2words",
+        "soundfile",
+        # Browser automation
+        "playwright",
+        "pyee",
+        "greenlet",
+        # Misc heavy tools
+        "yt_dlp",
+        "rich",
+        "rich_rst",
+        "Pygments",
+        "markdown_it_py",
+        "mdurl",
+        "markdown",
+        "docutils",
+        "babel",
+        "beartype",
+        "docstring_parser",
+        "loguru",
+        "shellingham",
+        "typer",
+        "cycler",
+        "kiwisolver",
+        "contourpy",
+        # tree-sitter grammars
+        "tree_sitter",
+        "tree_sitter_c",
+        "tree_sitter_c_sharp",
+        "tree_sitter_cpp",
+        "tree_sitter_elixir",
+        "tree_sitter_go",
+        "tree_sitter_java",
+        "tree_sitter_javascript",
+        "tree_sitter_julia",
+        "tree_sitter_kotlin",
+        "tree_sitter_lua",
+        "tree_sitter_objc",
+        "tree_sitter_php",
+        "tree_sitter_powershell",
+        "tree_sitter_python",
+        "tree_sitter_ruby",
+        "tree_sitter_rust",
+        "tree_sitter_scala",
+        "tree_sitter_swift",
+        "tree_sitter_typescript",
+        "tree_sitter_verilog",
+        "tree_sitter_zig",
+        # Dev / test
         "pytest",
         "unittest",
         "pydoc",
@@ -58,7 +208,11 @@ a = Analysis(
         "IPython",
         "jupyter",
         "notebook",
-        "cv2",
+        "pip",
+        "setuptools",
+        "wheel",
+        # NOTE: certifi, pycparser, brotli, h2, hpack, hyperframe intentionally
+        # NOT excluded — needed for HTTPS/TLS networking (OpenAI, Groq, HuggingFace)
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -68,7 +222,7 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 # ---------------------------------------------------------------------------
-# Single-folder build (recommended for tray apps — faster startup than onefile)
+# Single-file EXE
 # ---------------------------------------------------------------------------
 exe = EXE(
     pyz,
@@ -80,10 +234,9 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
+    upx=False,
     runtime_tmpdir=None,
-    console=False,          # --windowed  (no console window)
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
