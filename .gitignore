@@ -37,3 +37,5 @@ C-Sharp/obj/
 
 # ML-Modelle (große Binärdateien)
 C-Sharp/*.bin
+whisper/*
+!whisper/README.md
