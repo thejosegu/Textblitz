@@ -30,3 +30,10 @@ package-lock.json
 # Windows
 Thumbs.db
 desktop.ini
+
+# C# Build-Artefakte
+C-Sharp/bin/
+C-Sharp/obj/
+
+# ML-Modelle (große Binärdateien)
+C-Sharp/*.bin
